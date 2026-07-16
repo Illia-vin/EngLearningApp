@@ -1,56 +1,74 @@
-# Welcome to your Expo app 👋
+# EngLearningApp
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Простий інструктаж для запуску проєкту та збірки Android APK.
 
-## Get started
+## Потрібно
 
-1. Install dependencies
+- Node.js та npm
+- Android Studio / Android SDK
+- Java JDK (у комплекті з Android Studio)
+- Підключений Android-пристрій або емулятор
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Встановлення
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Запуск проекту
 
-### Other setup steps
+Запустити Metro та Expo:
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+npm start
+```
 
-## Learn more
+Запустити на Android-пристрої або емуляторі:
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npm run android
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Запустити сайт у браузері:
 
-## Join the community
+```bash
+npm run web
+```
 
-Join our community of developers creating universal apps.
+## Побудова APK
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### 1. Локальна збірка через Gradle
+
+У Windows PowerShell:
+
+```powershell
+cd android
+.\gradlew assembleRelease
+```
+
+Після успішної збірки APK знайдете тут:
+
+```text
+android\app\build\outputs\apk\release\app-release.apk
+```
+
+### 2. Швидкий запуск на пристрої
+
+Ця команда встановлює і запускає додаток на підключеному пристрої/емуляторі, але не створює готовий APK для розповсюдження:
+
+```bash
+npx expo run:android
+```
+
+## Популярні команди
+
+- `npm install` — встановити залежності
+- `npm start` — запустити Metro/Expo
+- `npm run android` — запустити на Android
+- `npm run web` — запустити у браузері
+- `npm run ios` — запустити на iOS (треба macOS)
+- `npm run lint` — перевірити стиль коду
+
+## Додатково
+
+Для встановлення APK на будь-який Android-пристрій використовуйте файл `app-release.apk` з папки `android\app\build\outputs\apk\release`.
