@@ -53,7 +53,8 @@ android\app\build\outputs\apk\release\app-release.apk
 ```
 
 Для продакшена:
-```cd android
+```powershell
+cd android
 $env:NODE_ENV = "production"
 .\gradlew bundleRelease
 ```
