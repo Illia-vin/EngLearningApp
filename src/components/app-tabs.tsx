@@ -3,10 +3,12 @@ import { useColorScheme } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import { Colors } from '@/constants/theme';
+import { useLanguage } from '@/i18n';
 
 export default function AppTabs() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const { t } = useLanguage();
 
   return (
     <NativeTabs
@@ -14,7 +16,7 @@ export default function AppTabs() {
       indicatorColor={colors.backgroundElement}
       labelStyle={{ selected: { color: colors.text } }}>
       <NativeTabs.Trigger name="words">
-        <NativeTabs.Trigger.Label>Слова</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('navigation.words')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={
             <NativeTabs.Trigger.VectorIcon
@@ -26,7 +28,7 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="dictionaries">
-        <NativeTabs.Trigger.Label>Словники</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('navigation.dictionaries')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={
             <NativeTabs.Trigger.VectorIcon
@@ -38,7 +40,7 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="settings">
-        <NativeTabs.Trigger.Label>Налаштування</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('navigation.settings')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={
             <NativeTabs.Trigger.VectorIcon

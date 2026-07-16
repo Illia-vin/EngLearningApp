@@ -5,10 +5,12 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useLanguage } from '@/i18n';
 
 export default function DictionariesScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
 
   const contentInset = {
     top: insets.top,
@@ -21,10 +23,10 @@ export default function DictionariesScreen() {
     <ThemedView style={[styles.container, { backgroundColor: theme.background }]}>      
       <ThemedView style={styles.content}>
         <ThemedText type="title" style={styles.title}>
-          Словники
+          {t('navigation.dictionaries')}
         </ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          Тут буде список словників і керування ними.
+          {t('dictionaries.description')}
         </ThemedText>
       </ThemedView>
     </ThemedView>

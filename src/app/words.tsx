@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useLanguage } from '@/i18n';
 
 interface Word {
   id: string;
@@ -21,6 +22,7 @@ export default function WordsScreen() {
 
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
 
   useEffect(() => {
     let active = true;
@@ -36,9 +38,7 @@ export default function WordsScreen() {
         setWords(result);
       } catch (caught) {
         if (!active) return;
-        setError(
-          caught instanceof Error ? caught.message : 'Failed to load words from the database.'
-        );
+        setError(caught instanceof Error ? caught.message : t('words.error'));
       } finally {
         if (active) {
           setLoading(false);
@@ -67,12 +67,12 @@ export default function WordsScreen() {
       contentContainerStyle={styles.contentContainer}>
       <ThemedView style={styles.container}>
         <ThemedText type="title" style={styles.title}>
-          Слова
+          {t('words.title')}
         </ThemedText>
 
         {loading && (
           <ThemedText type="small" themeColor="textSecondary">
-            Завантаження слів...
+            {t('words.loading')}
           </ThemedText>
         )}
 
@@ -84,7 +84,7 @@ export default function WordsScreen() {
 
         {!loading && !error && words.length === 0 && (
           <ThemedText type="small" themeColor="textSecondary">
-            Слів у базі не знайдено.
+            {t('words.empty')}
           </ThemedText>
         )}
 

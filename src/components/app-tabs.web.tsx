@@ -14,6 +14,7 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useLanguage } from '@/i18n';
 
 type MaterialCommunityIconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 
@@ -22,6 +23,8 @@ interface TabButtonProps extends TabTriggerSlotProps {
 }
 
 export default function AppTabs() {
+  const { t } = useLanguage();
+
   return (
     <Tabs>
       <TabSlot style={{ height: '100%' }} />
@@ -29,17 +32,17 @@ export default function AppTabs() {
         <CustomTabList>
           <TabTrigger name="words" href="/words" asChild>
             <TabButton iconName="book-open-variant">
-              Слова
+              {t('navigation.words')}
             </TabButton>
           </TabTrigger>
           <TabTrigger name="dictionaries" href="/dictionaries" asChild>
             <TabButton iconName="google-classroom">
-              Словники
+              {t('navigation.dictionaries')}
             </TabButton>
           </TabTrigger>
           <TabTrigger name="settings" href="/settings" asChild>
             <TabButton iconName="cog">
-              Налаштування
+              {t('navigation.settings')}
             </TabButton>
           </TabTrigger>
         </CustomTabList>

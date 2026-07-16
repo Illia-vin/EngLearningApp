@@ -1,0 +1,21 @@
+{
+  "navigation": {
+    "words": "Words",
+    "dictionaries": "Dictionaries",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Configure the app interface language.",
+    "languageLabel": "Interface language"
+  },
+  "words": {
+    "title": "Words",
+    "loading": "Loading words...",
+    "empty": "No words found in the database.",
+    "error": "Failed to load words from the database."
+  },
+  "dictionaries": {
+    "description": "This is where the list of dictionaries and their management will appear."
+  }
+}
