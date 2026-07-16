@@ -26,6 +26,7 @@
     },
     "plugins": [
       "expo-router",
+      "./scripts/with-android-release-optimizations",
       [
         "expo-splash-screen",
         {

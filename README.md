@@ -52,6 +52,12 @@ cd android
 android\app\build\outputs\apk\release\app-release.apk
 ```
 
+Для продакшена:
+```cd android
+$env:NODE_ENV = "production"
+.\gradlew bundleRelease
+```
+
 ### 2. Швидкий запуск на пристрої
 
 Ця команда встановлює і запускає додаток на підключеному пристрої/емуляторі, але не створює готовий APK для розповсюдження:
