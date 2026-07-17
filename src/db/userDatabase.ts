@@ -17,6 +17,7 @@ async function ensureUserProgressTable(database: SQLite.SQLiteDatabase) {
         ease_factor REAL NOT NULL DEFAULT 2.5,
         interval_days INTEGER NOT NULL DEFAULT 0,
         repetitions INTEGER NOT NULL DEFAULT 0,
+        difficulty INTEGER NOT NULL DEFAULT 0,
         next_review_at INTEGER,
         updated_at INTEGER NOT NULL DEFAULT (unixepoch())
       ) WITHOUT ROWID;
@@ -27,6 +28,11 @@ async function ensureUserProgressTable(database: SQLite.SQLiteDatabase) {
   const hasWord = columns.some((column) => column.name === 'word');
   const hasEntryKey = columns.some((column) => column.name === 'entry_key');
   if (hasWord) {
+    if (!columns.some((column) => column.name === 'difficulty')) {
+      await database.execAsync(
+        'ALTER TABLE user_progress ADD COLUMN difficulty INTEGER NOT NULL DEFAULT 0',
+      );
+    }
     return;
   }
   if (!hasEntryKey) {
@@ -43,6 +49,7 @@ async function ensureUserProgressTable(database: SQLite.SQLiteDatabase) {
         ease_factor REAL NOT NULL DEFAULT 2.5,
         interval_days INTEGER NOT NULL DEFAULT 0,
         repetitions INTEGER NOT NULL DEFAULT 0,
+        difficulty INTEGER NOT NULL DEFAULT 0,
         next_review_at INTEGER,
         updated_at INTEGER NOT NULL DEFAULT (unixepoch())
       ) WITHOUT ROWID;

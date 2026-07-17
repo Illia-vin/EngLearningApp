@@ -19,8 +19,8 @@ export interface StudySnapshot {
   nextReviewAt: number | null;
 }
 
-const REVIEW_AGAIN_SECONDS = 10 * 60;
 const DAY_SECONDS = 24 * 60 * 60;
+const MIN_REVIEW_INTERVAL_SECONDS = 10 * 60;
 
 function nowInSeconds() {
   return Math.floor(Date.now() / 1000);
@@ -64,9 +64,12 @@ export async function getStudySnapshot(
   }
 
   dueWords.sort((left, right) => {
-    const leftDue = progressByWord.get(left.word)?.next_review_at ?? 0;
-    const rightDue = progressByWord.get(right.word)?.next_review_at ?? 0;
-    return leftDue - rightDue || left.word.localeCompare(right.word);
+    const leftProgress = progressByWord.get(left.word);
+    const rightProgress = progressByWord.get(right.word);
+    return (
+      (leftProgress?.updated_at ?? 0) - (rightProgress?.updated_at ?? 0) ||
+      left.word.localeCompare(right.word)
+    );
   });
 
   return {
@@ -79,28 +82,28 @@ export async function getStudySnapshot(
 }
 
 export async function markWordKnown(word: string): Promise<void> {
-  const now = nowInSeconds();
   await saveWordProgress({
     word,
     status: 'known',
     ease_factor: 2.5,
     interval_days: 0,
     repetitions: 0,
+    difficulty: 0,
     next_review_at: null,
-    updated_at: now,
+    updated_at: Date.now(),
   });
 }
 
 export async function startLearningWord(word: string): Promise<void> {
-  const now = nowInSeconds();
   await saveWordProgress({
     word,
     status: 'learning',
     ease_factor: 2.5,
     interval_days: 0,
     repetitions: 0,
-    next_review_at: now,
-    updated_at: now,
+    difficulty: 0,
+    next_review_at: null,
+    updated_at: Date.now(),
   });
 }
 
@@ -117,25 +120,33 @@ export async function reviewWord(
   if (result === 'again') {
     await saveWordProgress({
       ...progress,
-      next_review_at: now + REVIEW_AGAIN_SECONDS,
-      updated_at: now,
+      ease_factor: Math.max(1.3, progress.ease_factor - 0.15),
+      difficulty: progress.difficulty + 1,
+      next_review_at: null,
+      updated_at: Date.now(),
     });
     return;
   }
 
   const repetitions = progress.repetitions + 1;
-  const intervalDays =
+  const baseIntervalDays =
     repetitions === 1
       ? 1
       : repetitions === 2
         ? 3
         : Math.max(4, Math.round(progress.interval_days * progress.ease_factor));
+  const difficultyMultiplier = Math.pow(0.65, progress.difficulty);
+  const intervalSeconds = Math.max(
+    MIN_REVIEW_INTERVAL_SECONDS,
+    Math.round(baseIntervalDays * DAY_SECONDS * difficultyMultiplier),
+  );
+  const intervalDays = intervalSeconds / DAY_SECONDS;
 
   await saveWordProgress({
     ...progress,
     interval_days: intervalDays,
     repetitions,
-    next_review_at: now + intervalDays * DAY_SECONDS,
-    updated_at: now,
+    next_review_at: now + intervalSeconds,
+    updated_at: Date.now(),
   });
 }

@@ -7,6 +7,7 @@ export interface UserProgress {
   ease_factor: number;
   interval_days: number;
   repetitions: number;
+  difficulty: number;
   next_review_at: number | null;
   updated_at: number;
 }
@@ -29,13 +30,14 @@ export async function saveWordProgress(progress: UserProgress) {
   await database.runAsync(
     `INSERT INTO user_progress (
        word, status, ease_factor, interval_days, repetitions,
-       next_review_at, updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?)
+       difficulty, next_review_at, updated_at
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(word) DO UPDATE SET
        status = excluded.status,
        ease_factor = excluded.ease_factor,
        interval_days = excluded.interval_days,
        repetitions = excluded.repetitions,
+       difficulty = excluded.difficulty,
        next_review_at = excluded.next_review_at,
        updated_at = excluded.updated_at`,
     [
@@ -44,6 +46,7 @@ export async function saveWordProgress(progress: UserProgress) {
       progress.ease_factor,
       progress.interval_days,
       progress.repetitions,
+      progress.difficulty,
       progress.next_review_at,
       progress.updated_at,
     ],
