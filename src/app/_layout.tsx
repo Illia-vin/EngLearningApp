@@ -10,9 +10,22 @@ import { LanguageProvider } from '@/i18n';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const baseTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+  const navigationTheme = {
+    ...baseTheme,
+    colors: {
+      ...baseTheme.colors,
+      primary: colors.accent,
+      background: colors.background,
+      card: colors.backgroundElement,
+      text: colors.text,
+      border: colors.border,
+      notification: colors.primary,
+    },
+  };
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={navigationTheme}>
       <LanguageProvider>
         <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
         <SafeAreaView

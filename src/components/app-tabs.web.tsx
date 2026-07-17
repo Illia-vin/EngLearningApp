@@ -14,6 +14,7 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { useLanguage } from '@/i18n';
 
 type MaterialCommunityIconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
@@ -53,20 +54,22 @@ export default function AppTabs() {
 
 export function TabButton({ children, iconName, isFocused, ...props }: TabButtonProps) {
   const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
 
   return (
-    <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
+    <Pressable
+      {...props}
+      style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}>
       <ThemedView
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
         style={styles.tabButtonView}>
         <MaterialCommunityIcons
           name={iconName}
           size={16}
-          color={isFocused ? colors.text : colors.textSecondary}
+          color={isFocused ? colors.accent : colors.textSecondary}
           style={styles.tabIcon}
         />
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
+        <ThemedText type="small" themeColor={isFocused ? 'accent' : 'textSecondary'}>
           {children}
         </ThemedText>
       </ThemedView>
@@ -75,9 +78,13 @@ export function TabButton({ children, iconName, isFocused, ...props }: TabButton
 }
 
 export function CustomTabList(props: TabListProps) {
+  const theme = useTheme();
+
   return (
     <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
+      <ThemedView
+        type="backgroundElement"
+        style={[styles.innerContainer, { borderColor: theme.border }]}>
         {props.children}
       </ThemedView>
     </View>
@@ -87,6 +94,7 @@ export function CustomTabList(props: TabListProps) {
 const styles = StyleSheet.create({
   tabListContainer: {
     position: 'absolute',
+    bottom: 0,
     width: '100%',
     padding: Spacing.three,
     justifyContent: 'center',
@@ -95,13 +103,19 @@ const styles = StyleSheet.create({
   },
   innerContainer: {
     paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.five,
-    borderRadius: Spacing.five,
+    paddingHorizontal: Spacing.two,
+    borderRadius: Spacing.three,
     flexDirection: 'row',
     alignItems: 'center',
     flexGrow: 1,
-    gap: Spacing.two,
+    gap: Spacing.one,
     maxWidth: MaxContentWidth,
+    borderWidth: 1,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 4,
   },
   brandText: {
     marginRight: 'auto',
@@ -109,12 +123,16 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.7,
   },
+  tabButton: {
+    flex: 1,
+  },
   tabButtonView: {
     paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
+    paddingHorizontal: Spacing.two,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: Spacing.one,
   },
   tabIcon: {

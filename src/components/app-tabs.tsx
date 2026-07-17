@@ -7,14 +7,19 @@ import { useLanguage } from '@/i18n';
 
 export default function AppTabs() {
   const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const { t } = useLanguage();
 
   return (
     <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
+      backgroundColor={colors.backgroundElement}
+      indicatorColor={colors.backgroundSelected}
+      rippleColor={colors.backgroundSelected}
+      iconColor={{ default: colors.textSecondary, selected: colors.accent }}
+      labelStyle={{
+        default: { color: colors.textSecondary, fontWeight: '600' },
+        selected: { color: colors.accent, fontWeight: '700' },
+      }}>
       <NativeTabs.Trigger name="words">
         <NativeTabs.Trigger.Label>{t('navigation.words')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon

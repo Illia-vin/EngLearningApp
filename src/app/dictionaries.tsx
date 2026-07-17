@@ -126,29 +126,44 @@ export default function DictionariesScreen() {
             accessibilityRole="button"
             onPress={() => setSelectedDictionary(null)}
             style={styles.backButton}>
-            <MaterialCommunityIcons name="arrow-left" size={22} color={theme.text} />
+            <MaterialCommunityIcons name="arrow-left" size={22} color={theme.accent} />
             <ThemedText type="smallBold">{t('common.back')}</ThemedText>
           </Pressable>
 
-          <ThemedText type="subtitle">{selectedDictionary.name}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {selectedDictionary.word_count} {t('dictionaries.words')}
-          </ThemedText>
+          <View style={styles.screenHeader}>
+            <ThemedText type="subtitle">{selectedDictionary.name}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {selectedDictionary.word_count} {t('dictionaries.words')}
+            </ThemedText>
+          </View>
 
           {detailLoading && <ActivityIndicator color={theme.textSecondary} />}
           {error && <ThemedText themeColor="textSecondary">{error}</ThemedText>}
 
-          {!detailLoading && !error && dictionaryWords.map((item) => (
+          {!detailLoading && !error && (
             <ThemedView
-              key={item.word}
               type="backgroundElement"
-              style={styles.wordRow}>
-              <ThemedText type="smallBold" style={styles.capitalize}>{item.word}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {item.translation}
-              </ThemedText>
+              style={[styles.wordList, { borderColor: theme.border }]}>
+              {dictionaryWords.map((item, index) => (
+                <View
+                  key={item.word}
+                  style={[
+                    styles.wordRow,
+                    index < dictionaryWords.length - 1 && {
+                      borderBottomColor: theme.border,
+                      borderBottomWidth: 1,
+                    },
+                  ]}>
+                  <ThemedText type="smallBold" style={styles.capitalize}>
+                    {item.word}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {item.translation}
+                  </ThemedText>
+                </View>
+              ))}
             </ThemedView>
-          ))}
+          )}
         </ThemedView>
       </ScrollView>
     );
@@ -159,12 +174,12 @@ export default function DictionariesScreen() {
       style={{ backgroundColor: theme.background }}
       contentContainerStyle={styles.scrollContent}>
       <ThemedView style={styles.content}>
-        <ThemedText type="title" style={styles.title}>
-          {t('navigation.dictionaries')}
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {t('dictionaries.description')}
-        </ThemedText>
+        <View style={styles.screenHeader}>
+          <ThemedText type="title">{t('navigation.dictionaries')}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {t('dictionaries.description')}
+          </ThemedText>
+        </View>
 
         {loading && <ActivityIndicator color={theme.textSecondary} />}
         {error && <ThemedText themeColor="textSecondary">{error}</ThemedText>}
@@ -173,7 +188,7 @@ export default function DictionariesScreen() {
           <ThemedView
             key={dictionary.dictionary_key}
             type="backgroundElement"
-            style={styles.dictionaryCard}>
+            style={[styles.dictionaryCard, { borderColor: theme.border }]}>
             <View style={styles.dictionaryHeader}>
               <View style={styles.dictionaryInfo}>
                 <ThemedText type="smallBold">{dictionary.name}</ThemedText>
@@ -186,6 +201,8 @@ export default function DictionariesScreen() {
                 accessibilityLabel={t('dictionaries.toggle', dictionary.name)}
                 value={dictionary.is_enabled}
                 disabled={updatingKey === dictionary.dictionary_key}
+                trackColor={{ false: theme.border, true: theme.primary }}
+                thumbColor={theme.control}
                 onValueChange={(enabled) => void toggleDictionary(dictionary, enabled)}
               />
             </View>
@@ -195,10 +212,15 @@ export default function DictionariesScreen() {
               onPress={() => void openDictionary(dictionary)}
               style={({ pressed }) => [
                 styles.openButton,
-                { backgroundColor: pressed ? theme.backgroundSelected : theme.background },
+                {
+                  backgroundColor: pressed ? theme.border : theme.backgroundSelected,
+                  borderColor: theme.border,
+                },
               ]}>
-              <ThemedText type="smallBold">{t('dictionaries.open')}</ThemedText>
-              <MaterialCommunityIcons name="chevron-right" size={22} color={theme.text} />
+              <ThemedText type="smallBold" themeColor="accent">
+                {t('dictionaries.open')}
+              </ThemedText>
+              <MaterialCommunityIcons name="chevron-right" size={22} color={theme.accent} />
             </Pressable>
           </ThemedView>
         ))}
@@ -211,7 +233,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.four,
   },
   content: {
@@ -219,13 +241,14 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     gap: Spacing.three,
   },
-  title: {
-    marginBottom: Spacing.two,
+  screenHeader: {
+    gap: Spacing.two,
   },
   dictionaryCard: {
     gap: Spacing.three,
-    padding: Spacing.four,
-    borderRadius: Spacing.four,
+    padding: Spacing.three,
+    borderRadius: Spacing.three,
+    borderWidth: 1,
   },
   dictionaryHeader: {
     flexDirection: 'row',
@@ -238,11 +261,12 @@ const styles = StyleSheet.create({
   },
   openButton: {
     minHeight: 44,
-    borderRadius: Spacing.three,
+    borderRadius: 12,
     paddingHorizontal: Spacing.three,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    borderWidth: 1,
   },
   backButton: {
     alignSelf: 'flex-start',
@@ -251,9 +275,13 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     minHeight: 44,
   },
+  wordList: {
+    borderRadius: Spacing.three,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
   wordRow: {
     padding: Spacing.three,
-    borderRadius: Spacing.three,
     gap: Spacing.one,
   },
   capitalize: {

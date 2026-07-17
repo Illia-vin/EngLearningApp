@@ -91,7 +91,7 @@ export default function WordsScreen() {
               accessibilityLabel={t('common.back')}
               onPress={() => setActiveMode(null)}
               style={styles.iconButton}>
-              <MaterialCommunityIcons name="arrow-left" size={26} color={theme.text} />
+              <MaterialCommunityIcons name="arrow-left" size={26} color={theme.accent} />
             </Pressable>
           )}
           <ThemedText type={activeMode ? 'subtitle' : 'title'} style={styles.flexText}>
@@ -146,7 +146,9 @@ export default function WordsScreen() {
 
         {!loading && activeMode === 'new' && (
           currentNewWord ? (
-            <ThemedView type="backgroundElement" style={styles.studyCard}>
+            <ThemedView
+              type="backgroundElement"
+              style={[styles.studyCard, { borderColor: theme.border }]}>
               <ThemedText type="small" themeColor="textSecondary">
                 {t('words.new.remaining')}: {snapshot.newWords.length}
               </ThemedText>
@@ -181,7 +183,9 @@ export default function WordsScreen() {
 
         {!loading && activeMode === 'review' && (
           currentReviewWord ? (
-            <ThemedView type="backgroundElement" style={styles.studyCard}>
+            <ThemedView
+              type="backgroundElement"
+              style={[styles.studyCard, { borderColor: theme.border }]}>
               <ThemedText type="small" themeColor="textSecondary">
                 {t('words.review.remaining')}: {snapshot.dueWords.length}
               </ThemedText>
@@ -253,18 +257,21 @@ function ModeCard({
       onPress={onPress}
       style={({ pressed }) => [
         styles.modeCard,
-        { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement },
+        {
+          backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
+          borderColor: theme.border,
+        },
         disabled && styles.disabled,
       ]}>
-      <View style={[styles.modeIcon, { backgroundColor: theme.background }]}>
-        <MaterialCommunityIcons name={icon} size={30} color={theme.text} />
+      <View style={[styles.modeIcon, { backgroundColor: theme.backgroundSelected }]}>
+        <MaterialCommunityIcons name={icon} size={30} color={theme.accent} />
       </View>
       <View style={styles.modeText}>
         <ThemedText type="smallBold">{title}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">{description}</ThemedText>
       </View>
-      <View style={[styles.countBadge, { backgroundColor: theme.background }]}>
-        <ThemedText type="smallBold">{count}</ThemedText>
+      <View style={[styles.countBadge, { backgroundColor: theme.primary }]}>
+        <ThemedText type="smallBold" themeColor="onPrimary">{count}</ThemedText>
       </View>
     </Pressable>
   );
@@ -282,7 +289,7 @@ function ActionButton({
   onPress: () => void;
 }) {
   const theme = useTheme();
-  const backgroundColor = variant === 'primary' ? '#3C87F7' : theme.backgroundSelected;
+  const backgroundColor = variant === 'primary' ? theme.primary : theme.backgroundSelected;
   return (
     <Pressable
       accessibilityRole="button"
@@ -290,9 +297,18 @@ function ActionButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.actionButton,
-        { backgroundColor, opacity: disabled ? 0.5 : pressed ? 0.75 : 1 },
+        {
+          backgroundColor: pressed
+            ? variant === 'primary' ? theme.primaryPressed : theme.border
+            : backgroundColor,
+          borderColor: variant === 'primary' ? theme.primary : theme.border,
+          opacity: disabled ? 0.5 : 1,
+        },
       ]}>
-      <ThemedText type="smallBold" style={variant === 'primary' && styles.primaryButtonText}>
+      <ThemedText
+        type="smallBold"
+        themeColor={variant === 'primary' ? 'onPrimary' : 'text'}
+        style={styles.buttonText}>
         {label}
       </ThemedText>
     </Pressable>
@@ -306,8 +322,10 @@ function EmptyState({ icon, title, description }: {
 }) {
   const theme = useTheme();
   return (
-    <ThemedView type="backgroundElement" style={styles.emptyState}>
-      <MaterialCommunityIcons name={icon} size={48} color={theme.textSecondary} />
+    <ThemedView
+      type="backgroundElement"
+      style={[styles.emptyState, { borderColor: theme.border }]}>
+      <MaterialCommunityIcons name={icon} size={48} color={theme.accent} />
       <ThemedText type="smallBold">{title}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{description}</ThemedText>
     </ThemedView>
@@ -322,9 +340,9 @@ const styles = StyleSheet.create({
   container: {
     maxWidth: MaxContentWidth,
     flexGrow: 1,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.four,
-    gap: Spacing.four,
+    gap: Spacing.three,
   },
   titleRow: {
     flexDirection: 'row',
@@ -341,20 +359,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modeCard: {
-    padding: Spacing.four,
-    borderRadius: Spacing.four,
+    padding: Spacing.three,
+    borderRadius: Spacing.three,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
-    minHeight: 112,
+    minHeight: 96,
+    borderWidth: 1,
   },
   disabled: {
     opacity: 0.45,
   },
   modeIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -363,20 +382,21 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   countBadge: {
-    minWidth: 36,
-    height: 36,
+    minWidth: 32,
+    height: 32,
     paddingHorizontal: Spacing.two,
-    borderRadius: 18,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   studyCard: {
-    minHeight: 420,
-    borderRadius: Spacing.four,
-    padding: Spacing.five,
+    minHeight: 320,
+    borderRadius: 20,
+    padding: Spacing.four,
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.four,
+    borderWidth: 1,
   },
   word: {
     textAlign: 'center',
@@ -384,28 +404,28 @@ const styles = StyleSheet.create({
   },
   actions: {
     width: '100%',
-    flexDirection: 'row',
-    gap: Spacing.three,
-    marginTop: Spacing.three,
+    gap: Spacing.two,
+    marginTop: Spacing.two,
   },
   actionButton: {
-    flex: 1,
+    width: '100%',
     minHeight: 52,
-    borderRadius: Spacing.three,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.three,
+    borderWidth: 1,
   },
-  primaryButtonText: {
-    color: '#FFFFFF',
+  buttonText: {
     textAlign: 'center',
   },
   emptyState: {
-    minHeight: 260,
-    padding: Spacing.five,
-    borderRadius: Spacing.four,
+    minHeight: 220,
+    padding: Spacing.four,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.two,
+    borderWidth: 1,
   },
 });

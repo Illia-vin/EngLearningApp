@@ -46,12 +46,12 @@ export default function SettingsScreen() {
       style={{ backgroundColor: theme.background }}
       contentContainerStyle={styles.scrollContent}>
       <ThemedView style={styles.content}>
-        <ThemedText type="title" style={styles.title}>
-          {t('settings.title')}
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {t('settings.description')}
-        </ThemedText>
+        <View style={styles.header}>
+          <ThemedText type="title">{t('settings.title')}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {t('settings.description')}
+          </ThemedText>
+        </View>
 
         <SettingsDropdown<LanguageCode>
           label={t('settings.interfaceLanguageLabel')}
@@ -104,7 +104,7 @@ function SettingsDropdown<T extends string>({
   const selectedLabel = options.find((option) => option.value === value)?.label ?? value;
 
   return (
-    <ThemedView type="backgroundElement" style={styles.dropdownCard}>
+    <View style={styles.dropdownSection}>
       <ThemedText type="smallBold">{label}</ThemedText>
       <Pressable
         accessibilityRole="button"
@@ -114,19 +114,23 @@ function SettingsDropdown<T extends string>({
           styles.dropdownTrigger,
           {
             backgroundColor: pressed ? theme.backgroundSelected : theme.background,
-            borderColor: theme.backgroundSelected,
+            borderColor: open ? theme.primary : theme.border,
           },
         ]}>
         <ThemedText>{selectedLabel}</ThemedText>
         <MaterialCommunityIcons
           name={open ? 'chevron-up' : 'chevron-down'}
           size={24}
-          color={theme.textSecondary}
+          color={open ? theme.accent : theme.textSecondary}
         />
       </Pressable>
 
       {open && (
-        <View style={[styles.dropdownMenu, { backgroundColor: theme.background }]}>
+        <View
+          style={[
+            styles.dropdownMenu,
+            { backgroundColor: theme.background, borderColor: theme.border },
+          ]}>
           {options.map((option) => {
             const selected = option.value === value;
             return (
@@ -139,18 +143,18 @@ function SettingsDropdown<T extends string>({
                   styles.dropdownOption,
                   (selected || pressed) && { backgroundColor: theme.backgroundSelected },
                 ]}>
-                <ThemedText themeColor={selected ? 'text' : 'textSecondary'}>
+                <ThemedText themeColor={selected ? 'accent' : 'textSecondary'}>
                   {option.label}
                 </ThemedText>
                 {selected && (
-                  <MaterialCommunityIcons name="check" size={21} color={theme.text} />
+                  <MaterialCommunityIcons name="check" size={21} color={theme.accent} />
                 )}
               </Pressable>
             );
           })}
         </View>
       )}
-    </ThemedView>
+    </View>
   );
 }
 
@@ -158,34 +162,33 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.four,
   },
   content: {
     maxWidth: MaxContentWidth,
     flexGrow: 1,
-    gap: Spacing.three,
+    gap: Spacing.four,
   },
-  title: {
-    marginBottom: Spacing.two,
+  header: {
+    gap: Spacing.two,
   },
-  dropdownCard: {
-    padding: Spacing.four,
-    borderRadius: Spacing.four,
+  dropdownSection: {
     gap: Spacing.two,
   },
   dropdownTrigger: {
     minHeight: 52,
     borderWidth: 1,
-    borderRadius: Spacing.three,
+    borderRadius: 14,
     paddingHorizontal: Spacing.three,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   dropdownMenu: {
-    borderRadius: Spacing.three,
+    borderRadius: 14,
     overflow: 'hidden',
+    borderWidth: 1,
   },
   dropdownOption: {
     minHeight: 48,
