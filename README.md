@@ -1,4 +1,4 @@
-# CypyEnglish
+# CapyEnglish
 
 Простий інструктаж для запуску проєкту та збірки Android APK.
 
