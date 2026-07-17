@@ -8,256 +8,508 @@
   "is_default": false,
   "words": {
     "house": {
-      "uk": "будинок",
-      "es": "casa"
+      "uk": [
+        "будинок"
+      ],
+      "es": [
+        "casa"
+      ]
     },
     "home": {
-      "uk": "дім",
-      "es": "hogar"
+      "uk": [
+        "дім"
+      ],
+      "es": [
+        "hogar"
+      ]
     },
     "room": {
-      "uk": "кімната",
-      "es": "habitación"
+      "uk": [
+        "кімната"
+      ],
+      "es": [
+        "habitación"
+      ]
     },
     "kitchen": {
-      "uk": "кухня",
-      "es": "cocina"
+      "uk": [
+        "кухня"
+      ],
+      "es": [
+        "cocina"
+      ]
     },
     "bathroom": {
-      "uk": "ванна кімната",
-      "es": "baño"
+      "uk": [
+        "ванна кімната"
+      ],
+      "es": [
+        "baño"
+      ]
     },
     "bedroom": {
-      "uk": "спальня",
-      "es": "dormitorio"
+      "uk": [
+        "спальня"
+      ],
+      "es": [
+        "dormitorio"
+      ]
     },
     "living_room": {
-      "uk": "вітальня",
-      "es": "sala de estar"
+      "uk": [
+        "вітальня"
+      ],
+      "es": [
+        "sala de estar"
+      ]
     },
     "hallway": {
-      "uk": "коридор",
-      "es": "pasillo"
+      "uk": [
+        "коридор"
+      ],
+      "es": [
+        "pasillo"
+      ]
     },
     "balcony": {
-      "uk": "балкон",
-      "es": "balcón"
+      "uk": [
+        "балкон"
+      ],
+      "es": [
+        "balcón"
+      ]
     },
     "garden": {
-      "uk": "сад",
-      "es": "jardín"
+      "uk": [
+        "сад"
+      ],
+      "es": [
+        "jardín"
+      ]
     },
     "garage": {
-      "uk": "гараж",
-      "es": "garaje"
+      "uk": [
+        "гараж"
+      ],
+      "es": [
+        "garaje"
+      ]
     },
     "door": {
-      "uk": "двері",
-      "es": "puerta"
+      "uk": [
+        "двері"
+      ],
+      "es": [
+        "puerta"
+      ]
     },
     "window": {
-      "uk": "вікно",
-      "es": "ventana"
+      "uk": [
+        "вікно"
+      ],
+      "es": [
+        "ventana"
+      ]
     },
     "wall": {
-      "uk": "стіна",
-      "es": "pared"
+      "uk": [
+        "стіна"
+      ],
+      "es": [
+        "pared"
+      ]
     },
     "floor": {
-      "uk": "підлога",
-      "es": "suelo"
+      "uk": [
+        "підлога"
+      ],
+      "es": [
+        "suelo"
+      ]
     },
     "ceiling": {
-      "uk": "стеля",
-      "es": "techo"
+      "uk": [
+        "стеля"
+      ],
+      "es": [
+        "techo"
+      ]
     },
     "roof": {
-      "uk": "дах",
-      "es": "tejado"
+      "uk": [
+        "дах"
+      ],
+      "es": [
+        "tejado"
+      ]
     },
     "stairs": {
-      "uk": "сходи",
-      "es": "escaleras"
+      "uk": [
+        "сходи"
+      ],
+      "es": [
+        "escaleras"
+      ]
     },
     "key": {
-      "uk": "ключ",
-      "es": "llave"
+      "uk": [
+        "ключ"
+      ],
+      "es": [
+        "llave"
+      ]
     },
     "lock": {
-      "uk": "замок",
-      "es": "cerradura"
+      "uk": [
+        "замок"
+      ],
+      "es": [
+        "cerradura"
+      ]
     },
     "table": {
-      "uk": "стіл",
-      "es": "mesa"
+      "uk": [
+        "стіл"
+      ],
+      "es": [
+        "mesa"
+      ]
     },
     "chair": {
-      "uk": "стілець",
-      "es": "silla"
+      "uk": [
+        "стілець"
+      ],
+      "es": [
+        "silla"
+      ]
     },
     "sofa": {
-      "uk": "диван",
-      "es": "sofá"
+      "uk": [
+        "диван"
+      ],
+      "es": [
+        "sofá"
+      ]
     },
     "bed": {
-      "uk": "ліжко",
-      "es": "cama"
+      "uk": [
+        "ліжко"
+      ],
+      "es": [
+        "cama"
+      ]
     },
     "pillow": {
-      "uk": "подушка",
-      "es": "almohada"
+      "uk": [
+        "подушка"
+      ],
+      "es": [
+        "almohada"
+      ]
     },
     "blanket": {
-      "uk": "ковдра",
-      "es": "manta"
+      "uk": [
+        "ковдра"
+      ],
+      "es": [
+        "manta"
+      ]
     },
     "wardrobe": {
-      "uk": "шафа",
-      "es": "armario"
+      "uk": [
+        "шафа"
+      ],
+      "es": [
+        "armario"
+      ]
     },
     "mirror": {
-      "uk": "дзеркало",
-      "es": "espejo"
+      "uk": [
+        "дзеркало"
+      ],
+      "es": [
+        "espejo"
+      ]
     },
     "lamp": {
-      "uk": "лампа",
-      "es": "lámpara"
+      "uk": [
+        "лампа"
+      ],
+      "es": [
+        "lámpara"
+      ]
     },
     "clock": {
-      "uk": "годинник",
-      "es": "reloj"
+      "uk": [
+        "годинник"
+      ],
+      "es": [
+        "reloj"
+      ]
     },
     "television": {
-      "uk": "телевізор",
-      "es": "televisión"
+      "uk": [
+        "телевізор"
+      ],
+      "es": [
+        "televisión"
+      ]
     },
     "computer": {
-      "uk": "комп'ютер",
-      "es": "computadora"
+      "uk": [
+        "комп'ютер"
+      ],
+      "es": [
+        "computadora"
+      ]
     },
     "refrigerator": {
-      "uk": "холодильник",
-      "es": "refrigerador"
+      "uk": [
+        "холодильник"
+      ],
+      "es": [
+        "refrigerador"
+      ]
     },
     "oven": {
-      "uk": "духовка",
-      "es": "horno"
+      "uk": [
+        "духовка"
+      ],
+      "es": [
+        "horno"
+      ]
     },
     "microwave": {
-      "uk": "мікрохвильова піч",
-      "es": "microondas"
+      "uk": [
+        "мікрохвильова піч"
+      ],
+      "es": [
+        "microondas"
+      ]
     },
     "sink": {
-      "uk": "раковина",
-      "es": "fregadero"
+      "uk": [
+        "раковина"
+      ],
+      "es": [
+        "fregadero"
+      ]
     },
     "shower": {
-      "uk": "душ",
-      "es": "ducha"
+      "uk": [
+        "душ"
+      ],
+      "es": [
+        "ducha"
+      ]
     },
     "bathtub": {
-      "uk": "ванна",
-      "es": "bañera"
+      "uk": [
+        "ванна"
+      ],
+      "es": [
+        "bañera"
+      ]
     },
     "toilet": {
-      "uk": "туалет",
-      "es": "inodoro"
+      "uk": [
+        "туалет"
+      ],
+      "es": [
+        "inodoro"
+      ]
     },
     "washing_machine": {
-      "uk": "пральна машина",
-      "es": "lavadora"
+      "uk": [
+        "пральна машина"
+      ],
+      "es": [
+        "lavadora"
+      ]
     },
     "vacuum_cleaner": {
-      "uk": "пилосос",
-      "es": "aspiradora"
+      "uk": [
+        "пилосос"
+      ],
+      "es": [
+        "aspiradora"
+      ]
     },
     "broom": {
-      "uk": "мітла",
-      "es": "escoba"
+      "uk": [
+        "мітла"
+      ],
+      "es": [
+        "escoba"
+      ]
     },
     "mop": {
-      "uk": "швабра",
-      "es": "fregona"
+      "uk": [
+        "швабра"
+      ],
+      "es": [
+        "fregona"
+      ]
     },
     "bucket": {
-      "uk": "відро",
-      "es": "cubo"
+      "uk": [
+        "відро"
+      ],
+      "es": [
+        "cubo"
+      ]
     },
     "soap": {
-      "uk": "мило",
-      "es": "jabón"
+      "uk": [
+        "мило"
+      ],
+      "es": [
+        "jabón"
+      ]
     },
     "towel": {
-      "uk": "рушник",
-      "es": "toalla"
+      "uk": [
+        "рушник"
+      ],
+      "es": [
+        "toalla"
+      ]
     },
     "toothbrush": {
-      "uk": "зубна щітка",
-      "es": "cepillo de dientes"
+      "uk": [
+        "зубна щітка"
+      ],
+      "es": [
+        "cepillo de dientes"
+      ]
     },
     "toothpaste": {
-      "uk": "зубна паста",
-      "es": "pasta de dientes"
+      "uk": [
+        "зубна паста"
+      ],
+      "es": [
+        "pasta de dientes"
+      ]
     },
     "dish": {
-      "uk": "тарілка",
-      "es": "plato"
+      "uk": [
+        "тарілка"
+      ],
+      "es": [
+        "plato"
+      ]
     },
     "cup": {
-      "uk": "чашка",
-      "es": "taza"
+      "uk": [
+        "чашка"
+      ],
+      "es": [
+        "taza"
+      ]
     },
     "glass": {
-      "uk": "склянка",
-      "es": "vaso"
+      "uk": [
+        "склянка"
+      ],
+      "es": [
+        "vaso"
+      ]
     },
     "bowl": {
-      "uk": "миска",
-      "es": "cuenco"
+      "uk": [
+        "миска"
+      ],
+      "es": [
+        "cuenco"
+      ]
     },
     "spoon": {
-      "uk": "ложка",
-      "es": "cuchara"
+      "uk": [
+        "ложка"
+      ],
+      "es": [
+        "cuchara"
+      ]
     },
     "fork": {
-      "uk": "виделка",
-      "es": "tenedor"
+      "uk": [
+        "виделка"
+      ],
+      "es": [
+        "tenedor"
+      ]
     },
     "knife": {
-      "uk": "ніж",
-      "es": "cuchillo"
+      "uk": [
+        "ніж"
+      ],
+      "es": [
+        "cuchillo"
+      ]
     },
     "plate": {
-      "uk": "тарілка",
-      "es": "plato"
+      "uk": [
+        "тарілка"
+      ],
+      "es": [
+        "plato"
+      ]
     },
     "pan": {
-      "uk": "сковорода",
-      "es": "sartén"
+      "uk": [
+        "сковорода"
+      ],
+      "es": [
+        "sartén"
+      ]
     },
     "pot": {
-      "uk": "каструля",
-      "es": "olla"
+      "uk": [
+        "каструля"
+      ],
+      "es": [
+        "olla"
+      ]
     },
     "cook": {
-      "uk": "готувати",
-      "es": "cocinar"
+      "uk": [
+        "готувати"
+      ],
+      "es": [
+        "cocinar"
+      ]
     },
     "clean": {
-      "uk": "прибирати",
-      "es": "limpiar"
+      "uk": [
+        "прибирати"
+      ],
+      "es": [
+        "limpiar"
+      ]
     },
     "wash": {
-      "uk": "мити",
-      "es": "lavar"
+      "uk": [
+        "мити"
+      ],
+      "es": [
+        "lavar"
+      ]
     },
     "open": {
-      "uk": "відчиняти",
-      "es": "abrir"
+      "uk": [
+        "відчиняти"
+      ],
+      "es": [
+        "abrir"
+      ]
     },
     "close": {
-      "uk": "зачиняти",
-      "es": "cerrar"
+      "uk": [
+        "зачиняти"
+      ],
+      "es": [
+        "cerrar"
+      ]
     }
   }
 }
