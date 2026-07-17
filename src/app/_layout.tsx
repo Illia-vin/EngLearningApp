@@ -1,6 +1,7 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, useColorScheme } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AppTabs from '@/components/app-tabs';
@@ -25,20 +26,25 @@ export default function TabLayout() {
   };
 
   return (
-    <ThemeProvider value={navigationTheme}>
-      <LanguageProvider>
-        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-        <SafeAreaView
-          edges={['top']}
-          style={[styles.safeArea, { backgroundColor: colors.background }]}>
-          <AppTabs />
-        </SafeAreaView>
-      </LanguageProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <ThemeProvider value={navigationTheme}>
+        <LanguageProvider>
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+          <SafeAreaView
+            edges={['top']}
+            style={[styles.safeArea, { backgroundColor: colors.background }]}>
+            <AppTabs />
+          </SafeAreaView>
+        </LanguageProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   safeArea: {
     flex: 1,
   },

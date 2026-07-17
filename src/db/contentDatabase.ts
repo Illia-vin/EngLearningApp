@@ -8,12 +8,12 @@ let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 export function getContentDatabase(): Promise<SQLite.SQLiteDatabase> {
   if (!databasePromise) {
     databasePromise = (async () => {
-      // The content database never contains user data. Remove the installed
-      // copy first so a stale database cannot survive an app update or asset
-      // cache; user settings and progress live separately in user.db.
-      await SQLite.deleteDatabaseAsync(CONTENT_DATABASE_NAME);
+      // Content contains no user data, so the bundled asset can safely replace
+      // the installed copy. Do not delete the file first: Expo SQLite caches
+      // native connections and could otherwise reuse a reference to a deleted DB.
       await SQLite.importDatabaseFromAssetAsync(CONTENT_DATABASE_NAME, {
         assetId: require('../../assets/databases/words.db'),
+        forceOverwrite: true,
       });
 
       const database = await SQLite.openDatabaseAsync(CONTENT_DATABASE_NAME);
