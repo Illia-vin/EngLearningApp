@@ -1,0 +1,423 @@
+{
+  "dictionary_key": "basic_english",
+  "name": {
+    "uk": "Базова англійська",
+    "en": "Basic English",
+    "es": "Inglés básico"
+  },
+  "is_default": true,
+  "words": {
+    "hello": {
+      "uk": "привіт",
+      "es": "hola"
+    },
+    "goodbye": {
+      "uk": "до побачення",
+      "es": "adiós"
+    },
+    "yes": {
+      "uk": "так",
+      "es": "sí"
+    },
+    "no": {
+      "uk": "ні",
+      "es": "no"
+    },
+    "please": {
+      "uk": "будь ласка",
+      "es": "por favor"
+    },
+    "thanks": {
+      "uk": "дякую",
+      "es": "gracias"
+    },
+    "sorry": {
+      "uk": "вибач",
+      "es": "lo siento"
+    },
+    "name": {
+      "uk": "ім'я",
+      "es": "nombre"
+    },
+    "friend": {
+      "uk": "друг",
+      "es": "amigo"
+    },
+    "family": {
+      "uk": "сім'я",
+      "es": "familia"
+    },
+    "mother": {
+      "uk": "мати",
+      "es": "madre"
+    },
+    "father": {
+      "uk": "батько",
+      "es": "padre"
+    },
+    "sister": {
+      "uk": "сестра",
+      "es": "hermana"
+    },
+    "brother": {
+      "uk": "брат",
+      "es": "hermano"
+    },
+    "child": {
+      "uk": "дитина",
+      "es": "niño"
+    },
+    "man": {
+      "uk": "чоловік",
+      "es": "hombre"
+    },
+    "woman": {
+      "uk": "жінка",
+      "es": "mujer"
+    },
+    "house": {
+      "uk": "будинок",
+      "es": "casa"
+    },
+    "home": {
+      "uk": "дім",
+      "es": "hogar"
+    },
+    "door": {
+      "uk": "двері",
+      "es": "puerta"
+    },
+    "window": {
+      "uk": "вікно",
+      "es": "ventana"
+    },
+    "table": {
+      "uk": "стіл",
+      "es": "mesa"
+    },
+    "chair": {
+      "uk": "стілець",
+      "es": "silla"
+    },
+    "bed": {
+      "uk": "ліжко",
+      "es": "cama"
+    },
+    "book": {
+      "uk": "книга",
+      "es": "libro"
+    },
+    "pen": {
+      "uk": "ручка",
+      "es": "bolígrafo"
+    },
+    "phone": {
+      "uk": "телефон",
+      "es": "teléfono"
+    },
+    "computer": {
+      "uk": "комп'ютер",
+      "es": "computadora"
+    },
+    "water": {
+      "uk": "вода",
+      "es": "agua"
+    },
+    "food": {
+      "uk": "їжа",
+      "es": "comida"
+    },
+    "bread": {
+      "uk": "хліб",
+      "es": "pan"
+    },
+    "milk": {
+      "uk": "молоко",
+      "es": "leche"
+    },
+    "coffee": {
+      "uk": "кава",
+      "es": "café"
+    },
+    "tea": {
+      "uk": "чай",
+      "es": "té"
+    },
+    "apple": {
+      "uk": "яблуко",
+      "es": "manzana"
+    },
+    "egg": {
+      "uk": "яйце",
+      "es": "huevo"
+    },
+    "meat": {
+      "uk": "м'ясо",
+      "es": "carne"
+    },
+    "fish": {
+      "uk": "риба",
+      "es": "pescado"
+    },
+    "cat": {
+      "uk": "кіт",
+      "es": "gato"
+    },
+    "dog": {
+      "uk": "собака",
+      "es": "perro"
+    },
+    "bird": {
+      "uk": "птах",
+      "es": "pájaro"
+    },
+    "car": {
+      "uk": "машина",
+      "es": "coche"
+    },
+    "bus": {
+      "uk": "автобус",
+      "es": "autobús"
+    },
+    "train": {
+      "uk": "потяг",
+      "es": "tren"
+    },
+    "road": {
+      "uk": "дорога",
+      "es": "carretera"
+    },
+    "city": {
+      "uk": "місто",
+      "es": "ciudad"
+    },
+    "country": {
+      "uk": "країна",
+      "es": "país"
+    },
+    "street": {
+      "uk": "вулиця",
+      "es": "calle"
+    },
+    "school": {
+      "uk": "школа",
+      "es": "escuela"
+    },
+    "work": {
+      "uk": "робота",
+      "es": "trabajo"
+    },
+    "job": {
+      "uk": "робота",
+      "es": "empleo"
+    },
+    "money": {
+      "uk": "гроші",
+      "es": "dinero"
+    },
+    "time": {
+      "uk": "час",
+      "es": "tiempo"
+    },
+    "day": {
+      "uk": "день",
+      "es": "día"
+    },
+    "night": {
+      "uk": "ніч",
+      "es": "noche"
+    },
+    "morning": {
+      "uk": "ранок",
+      "es": "mañana"
+    },
+    "evening": {
+      "uk": "вечір",
+      "es": "tarde"
+    },
+    "today": {
+      "uk": "сьогодні",
+      "es": "hoy"
+    },
+    "tomorrow": {
+      "uk": "завтра",
+      "es": "mañana"
+    },
+    "yesterday": {
+      "uk": "вчора",
+      "es": "ayer"
+    },
+    "week": {
+      "uk": "тиждень",
+      "es": "semana"
+    },
+    "month": {
+      "uk": "місяць",
+      "es": "mes"
+    },
+    "year": {
+      "uk": "рік",
+      "es": "año"
+    },
+    "big": {
+      "uk": "великий",
+      "es": "grande"
+    },
+    "small": {
+      "uk": "маленький",
+      "es": "pequeño"
+    },
+    "good": {
+      "uk": "хороший",
+      "es": "bueno"
+    },
+    "bad": {
+      "uk": "поганий",
+      "es": "malo"
+    },
+    "new": {
+      "uk": "новий",
+      "es": "nuevo"
+    },
+    "old": {
+      "uk": "старий",
+      "es": "viejo"
+    },
+    "hot": {
+      "uk": "гарячий",
+      "es": "caliente"
+    },
+    "cold": {
+      "uk": "холодний",
+      "es": "frío"
+    },
+    "fast": {
+      "uk": "швидкий",
+      "es": "rápido"
+    },
+    "slow": {
+      "uk": "повільний",
+      "es": "lento"
+    },
+    "happy": {
+      "uk": "щасливий",
+      "es": "feliz"
+    },
+    "sad": {
+      "uk": "сумний",
+      "es": "triste"
+    },
+    "beautiful": {
+      "uk": "красивий",
+      "es": "hermoso"
+    },
+    "easy": {
+      "uk": "легкий",
+      "es": "fácil"
+    },
+    "difficult": {
+      "uk": "складний",
+      "es": "difícil"
+    },
+    "go": {
+      "uk": "йти",
+      "es": "ir"
+    },
+    "come": {
+      "uk": "приходити",
+      "es": "venir"
+    },
+    "eat": {
+      "uk": "їсти",
+      "es": "comer"
+    },
+    "drink": {
+      "uk": "пити",
+      "es": "beber"
+    },
+    "sleep": {
+      "uk": "спати",
+      "es": "dormir"
+    },
+    "run": {
+      "uk": "бігти",
+      "es": "correr"
+    },
+    "walk": {
+      "uk": "ходити",
+      "es": "caminar"
+    },
+    "talk": {
+      "uk": "говорити",
+      "es": "hablar"
+    },
+    "speak": {
+      "uk": "розмовляти",
+      "es": "hablar"
+    },
+    "listen": {
+      "uk": "слухати",
+      "es": "escuchar"
+    },
+    "read": {
+      "uk": "читати",
+      "es": "leer"
+    },
+    "write": {
+      "uk": "писати",
+      "es": "escribir"
+    },
+    "learn": {
+      "uk": "вчити",
+      "es": "aprender"
+    },
+    "understand": {
+      "uk": "розуміти",
+      "es": "entender"
+    },
+    "know": {
+      "uk": "знати",
+      "es": "saber"
+    },
+    "think": {
+      "uk": "думати",
+      "es": "pensar"
+    },
+    "want": {
+      "uk": "хотіти",
+      "es": "querer"
+    },
+    "need": {
+      "uk": "потребувати",
+      "es": "necesitar"
+    },
+    "love": {
+      "uk": "любити",
+      "es": "amar"
+    },
+    "like": {
+      "uk": "подобатись",
+      "es": "gustar"
+    },
+    "help": {
+      "uk": "допомагати",
+      "es": "ayudar"
+    },
+    "buy": {
+      "uk": "купувати",
+      "es": "comprar"
+    },
+    "sell": {
+      "uk": "продавати",
+      "es": "vender"
+    },
+    "open": {
+      "uk": "відкривати",
+      "es": "abrir"
+    },
+    "close": {
+      "uk": "закривати",
+      "es": "cerrar"
+    }
+  }
+}

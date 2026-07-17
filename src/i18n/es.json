@@ -1,0 +1,50 @@
+{
+  "common": {
+    "back": "Atrás"
+  },
+  "navigation": {
+    "words": "Palabras",
+    "dictionaries": "Diccionarios",
+    "settings": "Ajustes"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "description": "Configura los idiomas de la interfaz y de traducción de palabras.",
+    "interfaceLanguageLabel": "Idioma de la interfaz",
+    "translationLanguageLabel": "Idioma de traducción"
+  },
+  "words": {
+    "title": "Palabras",
+    "loading": "Cargando palabras...",
+    "empty": "No se encontraron palabras en la base de datos.",
+    "error": "No se pudieron cargar las palabras de la base de datos.",
+    "chooseMode": "Elige qué quieres practicar ahora.",
+    "review": {
+      "title": "Repasar palabras",
+      "available": "Hay palabras listas para repasar.",
+      "noLearningWords": "Empieza a aprender palabras nuevas para desbloquear este modo.",
+      "nothingDue": "No hay palabras para repasar ahora. Próximo repaso:",
+      "remaining": "Disponibles ahora",
+      "showTranslation": "Mostrar traducción",
+      "again": "Otra vez",
+      "remembered": "La recuerdo",
+      "complete": "Repaso completado"
+    },
+    "new": {
+      "title": "Aprender palabras nuevas",
+      "description": "Palabras nuevas de los diccionarios activados.",
+      "noDictionaries": "Primero activa al menos un diccionario.",
+      "empty": "No hay palabras nuevas en los diccionarios activados.",
+      "remaining": "Palabras nuevas restantes",
+      "known": "Ya la conozco",
+      "startLearning": "Empezar a aprender",
+      "complete": "Todas las palabras nuevas están procesadas"
+    }
+  },
+  "dictionaries": {
+    "description": "Activa diccionarios para aprender o abre uno para ver sus palabras.",
+    "words": "palabras",
+    "toggle": "Activar o desactivar diccionario",
+    "open": "Ver palabras"
+  }
+}

@@ -1,14 +1,48 @@
-const { existsSync, mkdirSync, readFileSync, rmSync } = require('node:fs');
+const {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+} = require('node:fs');
 const { join, resolve } = require('node:path');
 const { DatabaseSync } = require('node:sqlite');
 
 const projectRoot = resolve(__dirname, '..');
 const seedsDirectory = join(projectRoot, 'src', 'db', 'seeds');
+const dictionariesDirectory = join(seedsDirectory, 'dictionaries');
 const outputDirectory = join(projectRoot, 'assets', 'databases');
 const outputPath = join(outputDirectory, 'words.db');
-const manifest = JSON.parse(
-  readFileSync(join(seedsDirectory, 'dictionaries.json'), 'utf8'),
-);
+const dictionarySeedFiles = readdirSync(dictionariesDirectory, {
+  withFileTypes: true,
+})
+  .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+  .map((entry) => entry.name)
+  .sort();
+
+if (dictionarySeedFiles.length === 0) {
+  throw new Error(`No dictionary seeds found in ${dictionariesDirectory}`);
+}
+
+const manifest = dictionarySeedFiles.map((fileName) => {
+  const dictionary = JSON.parse(
+    readFileSync(join(dictionariesDirectory, fileName), 'utf8'),
+  );
+
+  if (!dictionary || typeof dictionary !== 'object' || Array.isArray(dictionary)) {
+    throw new Error(`${fileName} must contain exactly one dictionary object`);
+  }
+  if (!/^[a-z][a-z0-9_]*$/.test(dictionary.dictionary_key)) {
+    throw new Error(`Invalid dictionary_key in ${fileName}`);
+  }
+  if (fileName !== `${dictionary.dictionary_key}.json`) {
+    throw new Error(
+      `${fileName} must match dictionary_key ${dictionary.dictionary_key}`,
+    );
+  }
+
+  return dictionary;
+});
 
 function validateLocalizedNames(owner, names) {
   if (!names || typeof names !== 'object' || Array.isArray(names)) {
@@ -27,10 +61,8 @@ if (manifest.filter((dictionary) => dictionary.is_default).length !== 1) {
 const translationLanguages = [
   ...new Set(
     manifest.flatMap((dictionary) =>
-      dictionary.lists.flatMap((list) =>
-        Object.values(list.words).flatMap((translations) =>
-          Object.keys(translations),
-        ),
+      Object.values(dictionary.words).flatMap((translations) =>
+        Object.keys(translations),
       ),
     ),
   ),
@@ -61,7 +93,7 @@ try {
   db.exec(`
     PRAGMA foreign_keys = ON;
     PRAGMA journal_mode = DELETE;
-    PRAGMA user_version = 4;
+    PRAGMA user_version = 5;
 
     CREATE TABLE dictionaries (
       dictionary_key TEXT PRIMARY KEY,
@@ -98,32 +130,18 @@ try {
       FOREIGN KEY (word) REFERENCES words(word) ON DELETE CASCADE
     ) WITHOUT ROWID;
 
-    CREATE TABLE word_lists (
-      list_key TEXT PRIMARY KEY,
+    CREATE TABLE dictionary_items (
       dictionary_key TEXT NOT NULL,
-      FOREIGN KEY (dictionary_key) REFERENCES dictionaries(dictionary_key) ON DELETE CASCADE
-    ) WITHOUT ROWID;
-
-    CREATE TABLE word_list_names (
-      list_key TEXT NOT NULL,
-      language TEXT NOT NULL,
-      name TEXT NOT NULL,
-      PRIMARY KEY (list_key, language),
-      FOREIGN KEY (list_key) REFERENCES word_lists(list_key) ON DELETE CASCADE
-    ) WITHOUT ROWID;
-
-    CREATE INDEX word_lists_dictionary_key
-      ON word_lists(dictionary_key);
-
-    CREATE TABLE word_list_items (
-      list_key TEXT NOT NULL,
       word TEXT NOT NULL COLLATE NOCASE,
       position INTEGER NOT NULL,
-      PRIMARY KEY (list_key, word),
-      UNIQUE (list_key, position),
-      FOREIGN KEY (list_key) REFERENCES word_lists(list_key) ON DELETE CASCADE,
+      PRIMARY KEY (dictionary_key, word),
+      UNIQUE (dictionary_key, position),
+      FOREIGN KEY (dictionary_key) REFERENCES dictionaries(dictionary_key) ON DELETE CASCADE,
       FOREIGN KEY (word) REFERENCES words(word) ON DELETE CASCADE
     ) WITHOUT ROWID;
+
+    CREATE INDEX dictionary_items_word
+      ON dictionary_items(word);
 
   `);
 
@@ -138,14 +156,6 @@ try {
   const insertDictionaryLanguage = db.prepare(`
     INSERT OR IGNORE INTO dictionary_languages (dictionary_key, language)
     VALUES (?, ?)
-  `);
-  const insertList = db.prepare(`
-    INSERT INTO word_lists (list_key, dictionary_key)
-    VALUES (?, ?)
-  `);
-  const insertListName = db.prepare(`
-    INSERT INTO word_list_names (list_key, language, name)
-    VALUES (?, ?, ?)
   `);
   const insertWord = db.prepare(`
     INSERT OR IGNORE INTO words (word) VALUES (?)
@@ -171,8 +181,8 @@ try {
       `),
     ]),
   );
-  const insertListItem = db.prepare(`
-    INSERT INTO word_list_items (list_key, word, position)
+  const insertDictionaryItem = db.prepare(`
+    INSERT INTO dictionary_items (dictionary_key, word, position)
     VALUES (?, ?, ?)
   `);
 
@@ -193,55 +203,52 @@ try {
       insertDictionaryName.run(dictionary.dictionary_key, language, name);
     }
 
-    for (const list of dictionary.lists) {
-      validateLocalizedNames(list.list_key, list.name);
-      insertList.run(list.list_key, dictionary.dictionary_key);
+    if (
+      !dictionary.words ||
+      typeof dictionary.words !== 'object' ||
+      Array.isArray(dictionary.words)
+    ) {
+      throw new Error(`${dictionary.dictionary_key} words must be an object`);
+    }
 
-      for (const [language, rawName] of Object.entries(list.name)) {
-        const name = String(rawName ?? '').trim();
-        if (!/^[a-z][a-z0-9_]*$/.test(language) || !name) {
-          throw new Error(`Invalid ${language} name for ${list.list_key}`);
-        }
-        insertListName.run(list.list_key, language, name);
+    Object.entries(dictionary.words).forEach(([englishWord, translations], position) => {
+      const word = englishWord.trim().toLowerCase();
+      const entries = Object.entries(translations);
+
+      if (!word || entries.length === 0) {
+        throw new Error(
+          `Invalid word in dictionary ${dictionary.dictionary_key}: ${englishWord}`,
+        );
       }
 
-      Object.entries(list.words).forEach(([englishWord, translations], position) => {
-        const word = englishWord.trim().toLowerCase();
-        const entries = Object.entries(translations);
+      insertWord.run(word);
+      insertTranslationRow.run(word);
 
-        if (!word || entries.length === 0) {
-          throw new Error(`Invalid word in list ${list.list_key}: ${englishWord}`);
+      for (const [language, rawTranslation] of entries) {
+        if (!translationLanguages.includes(language)) {
+          throw new Error(`Unsupported translation language: ${language}`);
         }
 
-        insertWord.run(word);
-        insertTranslationRow.run(word);
-
-        for (const [language, rawTranslation] of entries) {
-          if (!translationLanguages.includes(language)) {
-            throw new Error(`Unsupported translation language: ${language}`);
-          }
-
-          const translation = String(rawTranslation ?? '').trim();
-          if (!translation) {
-            throw new Error(`Empty ${language} translation for "${word}"`);
-          }
-
-          const getTranslation = getTranslationByLanguage[language];
-          const updateTranslation = updateTranslationByLanguage[language];
-          const storedEntry = getTranslation.get(word);
-          if (storedEntry.translation && storedEntry.translation !== translation) {
-            throw new Error(
-              `Conflicting ${language} translations for "${word}"`,
-            );
-          }
-
-          updateTranslation.run(translation, word);
-          insertDictionaryLanguage.run(dictionary.dictionary_key, language);
+        const translation = String(rawTranslation ?? '').trim();
+        if (!translation) {
+          throw new Error(`Empty ${language} translation for "${word}"`);
         }
 
-        insertListItem.run(list.list_key, word, position);
-      });
-    }
+        const getTranslation = getTranslationByLanguage[language];
+        const updateTranslation = updateTranslationByLanguage[language];
+        const storedEntry = getTranslation.get(word);
+        if (storedEntry.translation && storedEntry.translation !== translation) {
+          throw new Error(
+            `Conflicting ${language} translations for "${word}"`,
+          );
+        }
+
+        updateTranslation.run(translation, word);
+        insertDictionaryLanguage.run(dictionary.dictionary_key, language);
+      }
+
+      insertDictionaryItem.run(dictionary.dictionary_key, word, position);
+    });
   }
 
   db.exec('COMMIT');

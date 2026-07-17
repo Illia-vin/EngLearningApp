@@ -1,12 +1,22 @@
 import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 
-import { getCurrentLanguage, setCurrentLanguage, type StoredLanguage } from '@/features/settings';
+import {
+  getCurrentLanguage,
+  getCurrentTranslationLanguage,
+  setCurrentLanguage,
+  setCurrentTranslationLanguage,
+  type StoredLanguage,
+  type StoredTranslationLanguage,
+} from '@/features/settings';
 
 import en from './en.json';
+import es from './es.json';
 import uk from './uk.json';
 
-export const supportedLanguages = ['uk', 'en'] as const;
+export const supportedLanguages = ['uk', 'en', 'es'] as const;
 export type LanguageCode = (typeof supportedLanguages)[number];
+export const supportedTranslationLanguages = ['uk', 'es'] as const;
+export type TranslationLanguageCode = (typeof supportedTranslationLanguages)[number];
 
 type TranslationValue = string | { [key: string]: TranslationValue };
 type TranslationDictionary = typeof en;
@@ -14,12 +24,15 @@ type TranslationDictionary = typeof en;
 interface LanguageContextValue {
   locale: LanguageCode;
   setLocale: (locale: LanguageCode) => void;
+  translationLanguage: TranslationLanguageCode;
+  setTranslationLanguage: (language: TranslationLanguageCode) => void;
   t: (key: string, fallback?: string) => string;
 }
 
 const translations: Record<LanguageCode, TranslationDictionary> = {
   uk,
   en,
+  es,
 };
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
@@ -42,14 +55,22 @@ function getTranslationValue(dictionary: TranslationDictionary, key: string): st
 
 export function LanguageProvider({ children }: PropsWithChildren) {
   const [locale, setLocaleState] = useState<LanguageCode>('en');
+  const [translationLanguage, setTranslationLanguageState] =
+    useState<TranslationLanguageCode>('uk');
 
   useEffect(() => {
-    async function loadStoredLanguage() {
-      const storedLanguage = await getCurrentLanguage();
+    async function loadStoredLanguages() {
+      const [storedLanguage, storedTranslationLanguage] = await Promise.all([
+        getCurrentLanguage(),
+        getCurrentTranslationLanguage(),
+      ]);
       setLocaleState(storedLanguage as LanguageCode);
+      setTranslationLanguageState(
+        storedTranslationLanguage as TranslationLanguageCode,
+      );
     }
 
-    void loadStoredLanguage();
+    void loadStoredLanguages();
   }, []);
 
   const setLocale = (nextLocale: LanguageCode) => {
@@ -57,9 +78,16 @@ export function LanguageProvider({ children }: PropsWithChildren) {
     void setCurrentLanguage(nextLocale as StoredLanguage);
   };
 
+  const setTranslationLanguage = (nextLanguage: TranslationLanguageCode) => {
+    setTranslationLanguageState(nextLanguage);
+    void setCurrentTranslationLanguage(nextLanguage as StoredTranslationLanguage);
+  };
+
   const value = useMemo<LanguageContextValue>(() => ({
     locale,
     setLocale,
+    translationLanguage,
+    setTranslationLanguage,
     t: (key: string, fallback?: string) => {
       const currentValue = getTranslationValue(translations[locale], key);
       if (currentValue) {
@@ -69,7 +97,7 @@ export function LanguageProvider({ children }: PropsWithChildren) {
       const fallbackValue = getTranslationValue(translations.en, key);
       return fallbackValue ?? fallback ?? key;
     },
-  }), [locale]);
+  }), [locale, translationLanguage]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

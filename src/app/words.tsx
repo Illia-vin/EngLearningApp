@@ -42,19 +42,19 @@ export default function WordsScreen() {
   const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { locale, t } = useLanguage();
+  const { locale, translationLanguage, t } = useLanguage();
 
   const reload = useCallback(async () => {
     setError(null);
     try {
-      setSnapshot(await getStudySnapshot());
+      setSnapshot(await getStudySnapshot(translationLanguage));
       setTranslationVisible(false);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t('words.error'));
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, translationLanguage]);
 
   useFocusEffect(
     useCallback(() => {

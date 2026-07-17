@@ -37,7 +37,7 @@ npm run web
 
 ## Побудова APK
 
-Перед збіркою, якщо змінювали `src/db/seeds/dictionaries.json`, оновіть вбудовану базу слів:
+Перед збіркою, якщо змінювали файли в `src/db/seeds/dictionaries/`, оновіть вбудовану базу слів:
 
 ```bash
 npm run build:words-db

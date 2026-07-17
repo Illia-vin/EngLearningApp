@@ -9,8 +9,9 @@
   },
   "settings": {
     "title": "Settings",
-    "description": "Configure the app interface language.",
-    "languageLabel": "Interface language"
+    "description": "Configure the interface and word translation languages.",
+    "interfaceLanguageLabel": "Interface language",
+    "translationLanguageLabel": "Translation language"
   },
   "words": {
     "title": "Words",
@@ -43,7 +44,6 @@
   "dictionaries": {
     "description": "Enable dictionaries for learning or open one to browse its words.",
     "words": "words",
-    "lists": "lists",
     "toggle": "Enable or disable dictionary",
     "open": "View words"
   }

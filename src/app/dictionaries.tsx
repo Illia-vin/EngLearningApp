@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -33,12 +33,20 @@ export default function DictionariesScreen() {
   const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { locale, t } = useLanguage();
+  const { locale, translationLanguage, t } = useLanguage();
 
   const loadDictionaries = useCallback(async () => {
     setError(null);
     try {
-      setDictionaries(await getDictionarySelections(locale));
+      const result = await getDictionarySelections(locale);
+      setDictionaries(result);
+      setSelectedDictionary((current) =>
+        current
+          ? result.find(
+              (dictionary) => dictionary.dictionary_key === current.dictionary_key,
+            ) ?? current
+          : null,
+      );
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
@@ -81,17 +89,34 @@ export default function DictionariesScreen() {
 
   const openDictionary = async (dictionary: DictionarySelection) => {
     setSelectedDictionary(dictionary);
+  };
+
+  useEffect(() => {
+    if (!selectedDictionary) {
+      return;
+    }
+
+    let active = true;
     setDictionaryWords([]);
     setDetailLoading(true);
     setError(null);
-    try {
-      setDictionaryWords(await getDictionaryWords(dictionary.dictionary_key));
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
-    } finally {
-      setDetailLoading(false);
-    }
-  };
+    getDictionaryWords(selectedDictionary.dictionary_key, translationLanguage)
+      .then((words) => {
+        if (active) setDictionaryWords(words);
+      })
+      .catch((caught) => {
+        if (active) {
+          setError(caught instanceof Error ? caught.message : String(caught));
+        }
+      })
+      .finally(() => {
+        if (active) setDetailLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedDictionary?.dictionary_key, translationLanguage]);
 
   const contentInset = {
     top: insets.top,
@@ -165,8 +190,7 @@ export default function DictionariesScreen() {
                 <ThemedText type="smallBold">{dictionary.name}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
                   EN → {dictionary.translation_languages?.toUpperCase().replaceAll(',', ', ')} ·{' '}
-                  {dictionary.word_count} {t('dictionaries.words')} · {dictionary.list_count}{' '}
-                  {t('dictionaries.lists')}
+                  {dictionary.word_count} {t('dictionaries.words')}
                 </ThemedText>
               </View>
               <Switch

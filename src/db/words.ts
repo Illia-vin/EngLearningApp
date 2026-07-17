@@ -51,14 +51,12 @@ export async function getWordsForDictionaries(
     `SELECT DISTINCT
        words.word,
        translations."${language}" AS translation
-     FROM word_lists
-     INNER JOIN word_list_items
-       ON word_list_items.list_key = word_lists.list_key
+     FROM dictionary_items
      INNER JOIN words
-       ON words.word = word_list_items.word
+       ON words.word = dictionary_items.word
      INNER JOIN translations
        ON translations.word = words.word
-     WHERE word_lists.dictionary_key IN (${placeholders})
+     WHERE dictionary_items.dictionary_key IN (${placeholders})
        AND translations."${language}" IS NOT NULL
      ORDER BY words.word COLLATE NOCASE ASC`,
     dictionaryKeys,
@@ -86,12 +84,10 @@ export async function getDefaultDictionaryWords(
      INNER JOIN dictionary_languages
        ON dictionary_languages.dictionary_key = dictionaries.dictionary_key
       AND dictionary_languages.language = ?
-     INNER JOIN word_lists
-       ON word_lists.dictionary_key = dictionaries.dictionary_key
-     INNER JOIN word_list_items
-       ON word_list_items.list_key = word_lists.list_key
+     INNER JOIN dictionary_items
+       ON dictionary_items.dictionary_key = dictionaries.dictionary_key
      INNER JOIN words
-       ON words.word = word_list_items.word
+       ON words.word = dictionary_items.word
      INNER JOIN translations
        ON translations.word = words.word
      WHERE dictionaries.is_default = 1
