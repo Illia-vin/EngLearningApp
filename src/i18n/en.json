@@ -1,4 +1,7 @@
 {
+  "common": {
+    "back": "Back"
+  },
   "navigation": {
     "words": "Words",
     "dictionaries": "Dictionaries",
@@ -13,11 +16,35 @@
     "title": "Words",
     "loading": "Loading words...",
     "empty": "No words found in the database.",
-    "error": "Failed to load words from the database."
+    "error": "Failed to load words from the database.",
+    "chooseMode": "Choose what you want to practice now.",
+    "review": {
+      "title": "Review words",
+      "available": "Words are ready to review.",
+      "noLearningWords": "Start learning new words to unlock this mode.",
+      "nothingDue": "No words are due right now. Next review:",
+      "remaining": "Available now",
+      "showTranslation": "Show translation",
+      "again": "Again",
+      "remembered": "I remember",
+      "complete": "Review complete"
+    },
+    "new": {
+      "title": "Learn new words",
+      "description": "New words from your enabled dictionaries.",
+      "noDictionaries": "Enable at least one dictionary first.",
+      "empty": "There are no new words in enabled dictionaries.",
+      "remaining": "New words remaining",
+      "known": "Already known",
+      "startLearning": "Start learning",
+      "complete": "All new words processed"
+    }
   },
   "dictionaries": {
-    "description": "Available dictionaries and word lists.",
+    "description": "Enable dictionaries for learning or open one to browse its words.",
     "words": "words",
-    "lists": "lists"
+    "lists": "lists",
+    "toggle": "Enable or disable dictionary",
+    "open": "View words"
   }
 }

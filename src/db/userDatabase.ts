@@ -33,6 +33,21 @@ const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 2,
+    migrate: async (database) => {
+      await database.execAsync(`
+        CREATE TABLE dictionary_preferences (
+          dictionary_key TEXT PRIMARY KEY,
+          is_enabled INTEGER NOT NULL CHECK (is_enabled IN (0, 1)),
+          updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+        ) WITHOUT ROWID;
+
+        CREATE INDEX user_progress_status_next_review
+          ON user_progress(status, next_review_at);
+      `);
+    },
+  },
 ];
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;

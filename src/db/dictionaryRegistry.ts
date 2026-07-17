@@ -3,6 +3,7 @@ import { getContentDatabase } from './contentDatabase';
 export interface DictionarySummary {
   dictionary_key: string;
   name: string;
+  is_default: number;
   translation_languages: string;
   word_count: number;
   list_count: number;
@@ -23,6 +24,7 @@ export async function getDictionaries(
     `SELECT
        dictionaries.dictionary_key,
        COALESCE(localized_name.name, english_name.name, dictionaries.dictionary_key) AS name,
+       dictionaries.is_default,
        GROUP_CONCAT(DISTINCT dictionary_languages.language) AS translation_languages,
        COUNT(DISTINCT word_list_items.word) AS word_count,
        COUNT(DISTINCT word_lists.list_key) AS list_count
@@ -43,6 +45,15 @@ export async function getDictionaries(
      ORDER BY dictionaries.is_default DESC, name ASC`,
     [interfaceLanguage],
   );
+}
+
+export async function contentDictionaryExists(dictionaryKey: string): Promise<boolean> {
+  const database = await getContentDatabase();
+  const row = await database.getFirstAsync<{ dictionary_key: string }>(
+    'SELECT dictionary_key FROM dictionaries WHERE dictionary_key = ? LIMIT 1',
+    [dictionaryKey],
+  );
+  return Boolean(row);
 }
 
 export async function getWordLists(

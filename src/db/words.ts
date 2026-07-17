@@ -20,9 +20,7 @@ export async function contentWordExists(word: string): Promise<boolean> {
   return Boolean(row);
 }
 
-export async function getDefaultDictionaryWords(
-  language = DEFAULT_TRANSLATION_LANGUAGE,
-): Promise<DictionaryWord[]> {
+async function assertTranslationLanguage(language: string) {
   const database = await getContentDatabase();
   const translationColumns = await database.getAllAsync<{ name: string }>(
     'PRAGMA table_info(translations)',
@@ -30,10 +28,55 @@ export async function getDefaultDictionaryWords(
 
   if (
     language === 'word' ||
+    !/^[a-z][a-z0-9_]*$/.test(language) ||
     !translationColumns.some((column) => column.name === language)
   ) {
     throw new Error(`Translation language is not available: ${language}`);
   }
+}
+
+export async function getWordsForDictionaries(
+  dictionaryKeys: string[],
+  language = DEFAULT_TRANSLATION_LANGUAGE,
+): Promise<DictionaryWord[]> {
+  if (dictionaryKeys.length === 0) {
+    return [];
+  }
+
+  await assertTranslationLanguage(language);
+  const database = await getContentDatabase();
+  const placeholders = dictionaryKeys.map(() => '?').join(', ');
+
+  return database.getAllAsync<DictionaryWord>(
+    `SELECT DISTINCT
+       words.word,
+       translations."${language}" AS translation
+     FROM word_lists
+     INNER JOIN word_list_items
+       ON word_list_items.list_key = word_lists.list_key
+     INNER JOIN words
+       ON words.word = word_list_items.word
+     INNER JOIN translations
+       ON translations.word = words.word
+     WHERE word_lists.dictionary_key IN (${placeholders})
+       AND translations."${language}" IS NOT NULL
+     ORDER BY words.word COLLATE NOCASE ASC`,
+    dictionaryKeys,
+  );
+}
+
+export async function getDictionaryWords(
+  dictionaryKey: string,
+  language = DEFAULT_TRANSLATION_LANGUAGE,
+): Promise<DictionaryWord[]> {
+  return getWordsForDictionaries([dictionaryKey], language);
+}
+
+export async function getDefaultDictionaryWords(
+  language = DEFAULT_TRANSLATION_LANGUAGE,
+): Promise<DictionaryWord[]> {
+  await assertTranslationLanguage(language);
+  const database = await getContentDatabase();
 
   return database.getAllAsync<DictionaryWord>(
     `SELECT DISTINCT
