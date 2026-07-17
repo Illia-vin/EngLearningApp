@@ -9,12 +9,11 @@ import {
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/i18n';
 import {
   getDictionarySelections,
@@ -32,7 +31,6 @@ export default function DictionariesScreen() {
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
   const { locale, translationLanguage, t } = useLanguage();
 
   const loadDictionaries = useCallback(async () => {
@@ -118,18 +116,10 @@ export default function DictionariesScreen() {
     };
   }, [selectedDictionary?.dictionary_key, translationLanguage]);
 
-  const contentInset = {
-    top: insets.top,
-    left: insets.left,
-    right: insets.right,
-    bottom: insets.bottom + BottomTabInset + Spacing.three,
-  };
-
   if (selectedDictionary) {
     return (
       <ScrollView
         style={{ backgroundColor: theme.background }}
-        contentInset={contentInset}
         contentContainerStyle={styles.scrollContent}>
         <ThemedView style={styles.content}>
           <Pressable
@@ -167,7 +157,6 @@ export default function DictionariesScreen() {
   return (
     <ScrollView
       style={{ backgroundColor: theme.background }}
-      contentInset={contentInset}
       contentContainerStyle={styles.scrollContent}>
       <ThemedView style={styles.content}>
         <ThemedText type="title" style={styles.title}>

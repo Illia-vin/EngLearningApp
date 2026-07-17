@@ -1,4 +1,4 @@
-# EngLearningApp
+# CypyEnglish
 
 Простий інструктаж для запуску проєкту та збірки Android APK.
 

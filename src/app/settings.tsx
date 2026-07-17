@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import {
   supportedLanguages,
   supportedTranslationLanguages,
@@ -26,7 +25,6 @@ const languageLabels: Record<LanguageCode, string> = {
 export default function SettingsScreen() {
   const [openDropdown, setOpenDropdown] = useState<OpenDropdown>(null);
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
   const {
     locale,
     setLocale,
@@ -43,17 +41,9 @@ export default function SettingsScreen() {
     value: language,
     label: languageLabels[language],
   }));
-  const contentInset = {
-    top: insets.top,
-    left: insets.left,
-    right: insets.right,
-    bottom: insets.bottom + BottomTabInset + Spacing.three,
-  };
-
   return (
     <ScrollView
       style={{ backgroundColor: theme.background }}
-      contentInset={contentInset}
       contentContainerStyle={styles.scrollContent}>
       <ThemedView style={styles.content}>
         <ThemedText type="title" style={styles.title}>

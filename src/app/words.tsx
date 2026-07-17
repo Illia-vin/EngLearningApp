@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   getStudySnapshot,
@@ -20,7 +19,7 @@ import {
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/i18n';
 
 type StudyMode = 'review' | 'new';
@@ -41,7 +40,6 @@ export default function WordsScreen() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
   const { locale, translationLanguage, t } = useLanguage();
 
   const reload = useCallback(async () => {
@@ -81,17 +79,9 @@ export default function WordsScreen() {
     ? new Date(snapshot.nextReviewAt * 1000).toLocaleString(locale)
     : null;
 
-  const contentInset = {
-    top: insets.top,
-    left: insets.left,
-    right: insets.right,
-    bottom: insets.bottom + BottomTabInset + Spacing.three,
-  };
-
   return (
     <ScrollView
       style={{ backgroundColor: theme.background }}
-      contentInset={contentInset}
       contentContainerStyle={styles.contentContainer}>
       <ThemedView style={styles.container}>
         <View style={styles.titleRow}>
