@@ -37,6 +37,30 @@ npm run web
 
 ## Побудова APK
 
+Перед збіркою, якщо змінювали `src/db/seeds/dictionaries.json`, оновіть вбудовану базу слів:
+
+```bash
+npm run build:words-db
+```
+
+Формат слова в seed:
+
+```json
+"hello": { "uk": "привіт" }
+```
+
+Назви словника та списку також локалізовані:
+
+```json
+"name": { "uk": "Англійська для початківців", "en": "English for Beginners" }
+```
+
+Кілька перекладів:
+
+```json
+"hello": { "uk": "привіт", "pl": "cześć", "de": "hallo" }
+```
+
 ### 1. Локальна збірка через Gradle
 
 У Windows PowerShell:
@@ -74,6 +98,7 @@ npx expo run:android
 - `npm run android` — запустити на Android
 - `npm run web` — запустити у браузері
 - `npm run ios` — запустити на iOS (треба macOS)
+- `npm run build:words-db` — перегенерувати вбудовану базу слів
 - `npm run lint` — перевірити стиль коду
 
 ## Додатково

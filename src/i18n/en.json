@@ -16,6 +16,8 @@
     "error": "Failed to load words from the database."
   },
   "dictionaries": {
-    "description": "This is where the list of dictionaries and their management will appear."
+    "description": "Available dictionaries and word lists.",
+    "words": "words",
+    "lists": "lists"
   }
 }

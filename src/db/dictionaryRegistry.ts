@@ -1,24 +1,73 @@
-export interface RawWord {
-  source_word: string;
-  translation: string;
-}
+import { getContentDatabase } from './contentDatabase';
 
-export interface DictionaryConfig {
-  id: string;
+export interface DictionarySummary {
+  dictionary_key: string;
   name: string;
-  loader: () => RawWord[];
+  translation_languages: string;
+  word_count: number;
+  list_count: number;
 }
 
-export const dictionaries: DictionaryConfig[] = [
-  {
-    id: 'list_beginner_en_uk',
-    name: 'Англійська для початківців',
-    loader: () => require('./seeds/words_en_uk_beginner.json'),
-  },
-  // Наступні словники додавати сюди, наприклад:
-  // {
-  //   id: 'list_intermediate_en_uk',
-  //   name: 'Середній рівень (Intermediate)',
-  //   loader: () => require('./seeds/words_en_uk_intermediate.json'),
-  // }
-];
+export interface WordListSummary {
+  list_key: string;
+  dictionary_key: string;
+  name: string;
+  word_count: number;
+}
+
+export async function getDictionaries(
+  interfaceLanguage = 'en',
+): Promise<DictionarySummary[]> {
+  const database = await getContentDatabase();
+  return database.getAllAsync<DictionarySummary>(
+    `SELECT
+       dictionaries.dictionary_key,
+       COALESCE(localized_name.name, english_name.name, dictionaries.dictionary_key) AS name,
+       GROUP_CONCAT(DISTINCT dictionary_languages.language) AS translation_languages,
+       COUNT(DISTINCT word_list_items.word) AS word_count,
+       COUNT(DISTINCT word_lists.list_key) AS list_count
+     FROM dictionaries
+     LEFT JOIN dictionary_names AS localized_name
+       ON localized_name.dictionary_key = dictionaries.dictionary_key
+      AND localized_name.language = ?
+     LEFT JOIN dictionary_names AS english_name
+       ON english_name.dictionary_key = dictionaries.dictionary_key
+      AND english_name.language = 'en'
+     LEFT JOIN dictionary_languages
+       ON dictionary_languages.dictionary_key = dictionaries.dictionary_key
+     LEFT JOIN word_lists
+       ON word_lists.dictionary_key = dictionaries.dictionary_key
+     LEFT JOIN word_list_items
+       ON word_list_items.list_key = word_lists.list_key
+     GROUP BY dictionaries.dictionary_key
+     ORDER BY dictionaries.is_default DESC, name ASC`,
+    [interfaceLanguage],
+  );
+}
+
+export async function getWordLists(
+  dictionaryKey?: string,
+  interfaceLanguage = 'en',
+): Promise<WordListSummary[]> {
+  const database = await getContentDatabase();
+  return database.getAllAsync<WordListSummary>(
+    `SELECT
+       word_lists.list_key,
+       word_lists.dictionary_key,
+       COALESCE(localized_name.name, english_name.name, word_lists.list_key) AS name,
+       COUNT(word_list_items.word) AS word_count
+     FROM word_lists
+     LEFT JOIN word_list_names AS localized_name
+       ON localized_name.list_key = word_lists.list_key
+      AND localized_name.language = ?
+     LEFT JOIN word_list_names AS english_name
+       ON english_name.list_key = word_lists.list_key
+      AND english_name.language = 'en'
+     LEFT JOIN word_list_items
+       ON word_list_items.list_key = word_lists.list_key
+     WHERE (? IS NULL OR word_lists.dictionary_key = ?)
+     GROUP BY word_lists.list_key
+     ORDER BY name ASC`,
+    [interfaceLanguage, dictionaryKey ?? null, dictionaryKey ?? null],
+  );
+}

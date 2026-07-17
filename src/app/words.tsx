@@ -2,21 +2,15 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { db, initDatabase } from '@/db/database';
+import { getDefaultDictionaryWords, type DictionaryWord } from '@/db/words';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/i18n';
 
-interface Word {
-  id: string;
-  source_word: string;
-  translation: string;
-}
-
 export default function WordsScreen() {
-  const [words, setWords] = useState<Word[]>([]);
+  const [words, setWords] = useState<DictionaryWord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,10 +23,7 @@ export default function WordsScreen() {
 
     async function loadWords() {
       try {
-        await initDatabase();
-        const result = await db.getAllAsync<Word>(
-          'SELECT id, source_word, translation FROM words ORDER BY source_word ASC'
-        );
+        const result = await getDefaultDictionaryWords();
 
         if (!active) return;
         setWords(result);
@@ -91,9 +82,9 @@ export default function WordsScreen() {
         {!loading && !error && words.length > 0 && (
           <ThemedView type="backgroundElement" style={styles.wordsList}>
             {words.map((word) => (
-              <ThemedView key={word.id} style={styles.wordCard} type="backgroundElement">
+              <ThemedView key={word.word} style={styles.wordCard} type="backgroundElement">
                 <ThemedText type="smallBold" style={styles.wordText}>
-                  {word.source_word}
+                  {word.word}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
                   {word.translation}

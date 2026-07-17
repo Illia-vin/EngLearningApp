@@ -1,84 +1,9 @@
-import * as SQLite from 'expo-sqlite';
+export { CONTENT_DATABASE_NAME, getContentDatabase } from './contentDatabase';
+export { USER_DATABASE_NAME, getUserDatabase } from './userDatabase';
 
-export const db = SQLite.openDatabaseSync('englearning.db');
+import { getContentDatabase } from './contentDatabase';
+import { getUserDatabase } from './userDatabase';
 
-export type StoredLanguage = 'uk' | 'en';
-
-let initializationPromise: Promise<void> | null = null;
-let isDatabaseInitialized = false;
-
-export async function ensureColumn(table: string, column: string, definition: string) {
-  const columns = await db.getAllAsync<{ name: string }>(`PRAGMA table_info(${table})`);
-  const exists = columns.some((c) => c.name === column);
-  if (!exists) {
-    await db.execAsync(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
-  }
-}
-
-export async function initDatabase() {
-  if (isDatabaseInitialized) {
-    return;
-  }
-
-  if (initializationPromise) {
-    await initializationPromise;
-    return;
-  }
-
-  initializationPromise = (async () => {
-    await db.execAsync(`
-      PRAGMA foreign_keys = ON;
-
-      CREATE TABLE IF NOT EXISTS words (
-        id TEXT PRIMARY KEY,
-        source_word TEXT NOT NULL,
-        translation TEXT NOT NULL,
-        UNIQUE(source_word)
-      );
-
-      CREATE TABLE IF NOT EXISTS word_lists (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS word_list_items (
-        word_list_id TEXT NOT NULL,
-        word_id TEXT NOT NULL,
-        PRIMARY KEY (word_list_id, word_id),
-        FOREIGN KEY (word_list_id) REFERENCES word_lists(id) ON DELETE CASCADE,
-        FOREIGN KEY (word_id) REFERENCES words(id) ON DELETE CASCADE
-      );
-
-      CREATE TABLE IF NOT EXISTS user_progress (
-        word_id TEXT PRIMARY KEY,
-        status TEXT NOT NULL DEFAULT 'learning',
-        ease_factor REAL NOT NULL DEFAULT 2.5,
-        interval_days INTEGER NOT NULL DEFAULT 0,
-        repetitions INTEGER NOT NULL DEFAULT 0,
-        next_review_at INTEGER,
-        updated_at INTEGER,
-        FOREIGN KEY (word_id) REFERENCES words(id) ON DELETE CASCADE
-      );
-
-      CREATE TABLE IF NOT EXISTS settings (
-        id TEXT PRIMARY KEY,
-        current_language TEXT NOT NULL DEFAULT 'en'
-      );
-    `);
-
-    try {
-      const { seedDictionaries } = await import('./seeds/seeder');
-      await seedDictionaries();
-    } catch (error) {
-      console.error('Database initialization failed:', error);
-    }
-
-    isDatabaseInitialized = true;
-  })();
-
-  try {
-    await initializationPromise;
-  } finally {
-    initializationPromise = null;
-  }
+export async function initDatabases() {
+  await Promise.all([getContentDatabase(), getUserDatabase()]);
 }
