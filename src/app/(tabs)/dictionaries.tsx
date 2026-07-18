@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
+  type ImageSourcePropType,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,6 +25,14 @@ import {
 import { getDictionaryWords, type DictionaryWord } from '@/db/words';
 import { getWordProgressMap, MASTERED_REPETITION_COUNT, type UserProgress } from '@/db/progress';
 import { getDictionary, type DictionarySummary } from '@/db/dictionaryRegistry';
+
+const DICTIONARY_ICON_SOURCES: Record<string, ImageSourcePropType> = {
+  a1: require('../../../assets/images/dictionary-icons/cefr-a1.png'),
+  a2: require('../../../assets/images/dictionary-icons/cefr-a2.png'),
+  b1: require('../../../assets/images/dictionary-icons/cefr-b1.png'),
+  b2: require('../../../assets/images/dictionary-icons/cefr-b2.png'),
+  c1: require('../../../assets/images/dictionary-icons/cefr-c1.png'),
+};
 
 export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: string }) {
   const WORD_PAGE_SIZE = 30;
@@ -326,6 +336,7 @@ function DictionaryCard({
   onToggle: (enabled: boolean) => void;
 }) {
   const theme = useTheme();
+  const iconSource = DICTIONARY_ICON_SOURCES[dictionary.cefr];
   return (
     <Pressable
       accessibilityRole="button"
@@ -340,7 +351,11 @@ function DictionaryCard({
       ]}>
       <View style={styles.dictionaryHeader}>
         <View style={[styles.dictionaryIcon, { backgroundColor: theme.background }]}>
-          <MaterialCommunityIcons name="bookmark-outline" size={26} color={theme.accent} />
+          {iconSource ? (
+            <Image source={iconSource} resizeMode="cover" style={styles.dictionaryImage} />
+          ) : (
+            <MaterialCommunityIcons name="bookmark-outline" size={26} color={theme.accent} />
+          )}
         </View>
         <View style={styles.dictionaryInfo}>
           <ThemedText type="smallBold">{dictionary.name}</ThemedText>
@@ -443,8 +458,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   dictionaryImage: {
-    width: 44,
-    height: 44,
+    width: '100%',
+    height: '100%',
   },
   checkbox: {
     minWidth: 44,
