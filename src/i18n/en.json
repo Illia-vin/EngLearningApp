@@ -1,5 +1,6 @@
 {
   "common": {
+    "pressBackAgainToExit": "Press back again to exit",
     "back": "Back"
   },
   "navigation": {

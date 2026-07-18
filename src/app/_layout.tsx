@@ -1,12 +1,49 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, useColorScheme } from 'react-native';
+import { useEffect, useRef } from 'react';
+import {
+  BackHandler,
+  Platform,
+  StyleSheet,
+  ToastAndroid,
+  useColorScheme,
+} from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AppTabs from '@/components/app-tabs';
 import { Colors } from '@/constants/theme';
-import { LanguageProvider } from '@/i18n';
+import { LanguageProvider, useLanguage } from '@/i18n';
+
+const EXIT_CONFIRMATION_WINDOW_MS = 2000;
+
+function AndroidDoubleBackExit() {
+  const { t } = useLanguage();
+  const lastBackPressAt = useRef(0);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') {
+      return;
+    }
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      const now = Date.now();
+
+      if (now - lastBackPressAt.current <= EXIT_CONFIRMATION_WINDOW_MS) {
+        BackHandler.exitApp();
+        return true;
+      }
+
+      lastBackPressAt.current = now;
+      ToastAndroid.show(t('common.pressBackAgainToExit'), ToastAndroid.SHORT);
+      return true;
+    });
+
+    return () => subscription.remove();
+  }, [t]);
+
+  return null;
+}
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -29,6 +66,7 @@ export default function TabLayout() {
     <GestureHandlerRootView style={styles.root}>
       <ThemeProvider value={navigationTheme}>
         <LanguageProvider>
+          <AndroidDoubleBackExit />
           <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
           <SafeAreaView
             edges={['top']}
