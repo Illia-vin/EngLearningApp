@@ -73,7 +73,7 @@ export default function TabLayout() {
           <AndroidDoubleBackExit />
           <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
           <SafeAreaView
-            edges={['top', 'bottom']}
+            edges={['top']}
             style={[styles.safeArea, { backgroundColor: colors.background }]}>
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(tabs)" />

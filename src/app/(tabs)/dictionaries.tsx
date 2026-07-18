@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
+  type ImageSourcePropType,
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   View,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -22,6 +23,11 @@ import {
 } from '@/db/dictionaryPreferences';
 import { getDictionaryWords, type DictionaryWord } from '@/db/words';
 
+const DICTIONARY_ICON_SOURCES: Record<string, ImageSourcePropType> = {
+  basic_english: require('../../../assets/images/dictionary-icons/basic-english.png'),
+  home: require('../../../assets/images/dictionary-icons/home.png'),
+};
+
 export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: string }) {
   const router = useRouter();
   const [dictionaries, setDictionaries] = useState<DictionarySelection[]>([]);
@@ -36,14 +42,17 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
   const loadDictionaries = useCallback(async () => {
     setError(null);
     try {
-      const result = await getDictionarySelections(locale);
+      const result = await getDictionarySelections({
+        displayLanguage: locale,
+        translationLanguage,
+      });
       setDictionaries(result);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
       setLoading(false);
     }
-  }, [locale]);
+  }, [locale, translationLanguage]);
 
   useFocusEffect(
     useCallback(() => {
@@ -185,47 +194,108 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
         {error && <ThemedText themeColor="textSecondary">{error}</ThemedText>}
 
         {!loading && dictionaries.map((dictionary) => (
-          <ThemedView
+          <DictionaryCard
             key={dictionary.dictionary_key}
-            type="backgroundElement"
-            style={[styles.dictionaryCard, { borderColor: theme.border }]}>
-            <View style={styles.dictionaryHeader}>
-              <View style={styles.dictionaryInfo}>
-                <ThemedText type="smallBold">{dictionary.name}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  EN → {dictionary.translation_languages?.toUpperCase().replaceAll(',', ', ')} ·{' '}
-                  {dictionary.word_count} {t('dictionaries.words')}
-                </ThemedText>
-              </View>
-              <Switch
-                accessibilityLabel={t('dictionaries.toggle', dictionary.name)}
-                value={dictionary.is_enabled}
-                disabled={updatingKey === dictionary.dictionary_key}
-                trackColor={{ false: theme.border, true: theme.primary }}
-                thumbColor={theme.control}
-                onValueChange={(enabled) => void toggleDictionary(dictionary, enabled)}
-              />
-            </View>
-
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => openDictionary(dictionary)}
-              style={({ pressed }) => [
-                styles.openButton,
-                {
-                  backgroundColor: pressed ? theme.border : theme.backgroundSelected,
-                  borderColor: theme.border,
-                },
-              ]}>
-              <ThemedText type="smallBold" themeColor="accent">
-                {t('dictionaries.open')}
-              </ThemedText>
-              <MaterialCommunityIcons name="chevron-right" size={22} color={theme.accent} />
-            </Pressable>
-          </ThemedView>
+            dictionary={dictionary}
+            updating={updatingKey === dictionary.dictionary_key}
+            wordLabel={t('dictionaries.words')}
+            progressLabel={t('dictionaries.progress')}
+            toggleLabel={t('dictionaries.toggle', dictionary.name)}
+            onOpen={() => openDictionary(dictionary)}
+            onToggle={(enabled) => void toggleDictionary(dictionary, enabled)}
+          />
         ))}
+
+        {!loading && dictionaries.length === 0 && (
+          <ThemedText themeColor="textSecondary">{t('dictionaries.empty')}</ThemedText>
+        )}
       </ThemedView>
     </ScrollView>
+  );
+}
+
+function DictionaryCard({
+  dictionary,
+  updating,
+  wordLabel,
+  progressLabel,
+  toggleLabel,
+  onOpen,
+  onToggle,
+}: {
+  dictionary: DictionarySelection;
+  updating: boolean;
+  wordLabel: string;
+  progressLabel: string;
+  toggleLabel: string;
+  onOpen: () => void;
+  onToggle: (enabled: boolean) => void;
+}) {
+  const theme = useTheme();
+  const iconSource = DICTIONARY_ICON_SOURCES[dictionary.dictionary_key];
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={dictionary.name}
+      onPress={onOpen}
+      style={({ pressed }) => [
+        styles.dictionaryCard,
+        {
+          backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
+          borderColor: theme.border,
+        },
+      ]}>
+      <View style={styles.dictionaryHeader}>
+        <View style={[styles.dictionaryIcon, { backgroundColor: theme.background }]}>
+          {iconSource ? (
+            <Image source={iconSource} resizeMode="contain" style={styles.dictionaryImage} />
+          ) : (
+            <MaterialCommunityIcons name="bookmark-outline" size={26} color={theme.accent} />
+          )}
+        </View>
+        <View style={styles.dictionaryInfo}>
+          <ThemedText type="smallBold">{dictionary.name}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {dictionary.word_count} {wordLabel}
+          </ThemedText>
+        </View>
+        <Pressable
+          accessibilityLabel={toggleLabel}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: dictionary.is_enabled, disabled: updating }}
+          disabled={updating}
+          hitSlop={Spacing.two}
+          onPress={() => onToggle(!dictionary.is_enabled)}
+          style={styles.checkbox}>
+          <MaterialCommunityIcons
+            name={dictionary.is_enabled ? 'checkbox-marked' : 'checkbox-blank-outline'}
+            size={28}
+            color={dictionary.is_enabled ? theme.accent : theme.textSecondary}
+          />
+        </Pressable>
+      </View>
+
+      <View style={styles.progressSection}>
+        <View style={styles.progressHeader}>
+          <ThemedText type="small" themeColor="textSecondary">
+            {progressLabel}
+          </ThemedText>
+          <ThemedText type="smallBold" themeColor="accent">
+            {dictionary.progress_percent}%
+          </ThemedText>
+        </View>
+        <View style={[styles.progressTrack, { backgroundColor: theme.border }]}>
+          <View
+            style={[
+              styles.progressFill,
+              { backgroundColor: theme.primary, width: `${dictionary.progress_percent}%` },
+            ]}
+          />
+        </View>
+      </View>
+
+    </Pressable>
   );
 }
 
@@ -245,10 +315,11 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   dictionaryCard: {
-    gap: Spacing.three,
+    gap: Spacing.two,
     padding: Spacing.three,
     borderRadius: Spacing.three,
     borderWidth: 1,
+    minHeight: 128,
   },
   dictionaryHeader: {
     flexDirection: 'row',
@@ -259,14 +330,39 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: Spacing.one,
   },
-  openButton: {
-    minHeight: 44,
-    borderRadius: 12,
-    paddingHorizontal: Spacing.three,
-    flexDirection: 'row',
+  dictionaryIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  dictionaryImage: {
+    width: 44,
+    height: 44,
+  },
+  checkbox: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  progressSection: {
+    gap: Spacing.one,
+  },
+  progressHeader: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    borderWidth: 1,
+  },
+  progressTrack: {
+    height: 7,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
   },
   backButton: {
     alignSelf: 'flex-start',

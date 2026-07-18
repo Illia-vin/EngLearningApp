@@ -43,6 +43,8 @@
     }
   },
   "dictionaries": {
+    "progress": "Progreso de aprendizaje",
+    "empty": "No hay diccionarios compatibles con el idioma de traducción seleccionado.",
     "description": "Activa diccionarios para aprender o abre uno para ver sus palabras.",
     "words": "palabras",
     "toggle": "Activar o desactivar diccionario",

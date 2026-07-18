@@ -43,6 +43,8 @@
     }
   },
   "dictionaries": {
+    "progress": "Learning progress",
+    "empty": "No dictionaries support the selected translation language.",
     "description": "Enable dictionaries for learning or open one to browse its words.",
     "words": "words",
     "toggle": "Enable or disable dictionary",

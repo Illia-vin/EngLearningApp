@@ -8,10 +8,20 @@ export interface DictionarySummary {
   word_count: number;
 }
 
-export async function getDictionaries(
-  interfaceLanguage = 'en',
-): Promise<DictionarySummary[]> {
+export async function getDictionaries({
+  displayLanguage = 'en',
+  translationLanguage,
+}: {
+  displayLanguage?: string;
+  translationLanguage?: string;
+} = {}): Promise<DictionarySummary[]> {
   const database = await getContentDatabase();
+  const languageFilter = translationLanguage
+    ? `INNER JOIN dictionary_languages AS supported_language
+         ON supported_language.dictionary_key = dictionaries.dictionary_key
+        AND supported_language.language = ?`
+    : '';
+
   return database.getAllAsync<DictionarySummary>(
     `SELECT
        dictionaries.dictionary_key,
@@ -20,6 +30,7 @@ export async function getDictionaries(
        GROUP_CONCAT(DISTINCT dictionary_languages.language) AS translation_languages,
        COUNT(DISTINCT dictionary_items.word) AS word_count
      FROM dictionaries
+     ${languageFilter}
      LEFT JOIN dictionary_names AS localized_name
        ON localized_name.dictionary_key = dictionaries.dictionary_key
       AND localized_name.language = ?
@@ -32,7 +43,7 @@ export async function getDictionaries(
        ON dictionary_items.dictionary_key = dictionaries.dictionary_key
      GROUP BY dictionaries.dictionary_key
      ORDER BY dictionaries.is_default DESC, name ASC`,
-    [interfaceLanguage],
+    translationLanguage ? [translationLanguage, displayLanguage] : [displayLanguage],
   );
 }
 

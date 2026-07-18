@@ -29,7 +29,7 @@ function nowInSeconds() {
 export async function getStudySnapshot(
   language = DEFAULT_TRANSLATION_LANGUAGE,
 ): Promise<StudySnapshot> {
-  const enabledDictionaryKeys = await getEnabledDictionaryKeys();
+  const enabledDictionaryKeys = await getEnabledDictionaryKeys(language);
   const words = await getWordsForDictionaries(enabledDictionaryKeys, language);
   const userDatabase = await getUserDatabase();
   const progressRows = await userDatabase.getAllAsync<UserProgress>(
