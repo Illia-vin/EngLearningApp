@@ -73,7 +73,6 @@ const entries = Object.entries(raw)
       definition: text(entry.definition, 'definition', id), example: text(entry.example, 'example', id),
       translation_uk: text(entry.translation_uk, 'translation_uk', id),
       translation_es: text(entry.translation_es, 'translation_es', id),
-      uk: text(entry.uk, 'uk', id), us: text(entry.us, 'us', id),
     };
   })
   .sort((left, right) => left.id - right.id);
@@ -112,9 +111,7 @@ try {
       definition TEXT NOT NULL,
       example TEXT NOT NULL,
       translation_uk TEXT NOT NULL,
-      translation_es TEXT NOT NULL,
-      uk TEXT NOT NULL,
-      us TEXT NOT NULL
+      translation_es TEXT NOT NULL
     );
     CREATE TABLE word_types (
       id INTEGER PRIMARY KEY,
@@ -136,8 +133,8 @@ try {
   `);
   const insertDictionary = db.prepare('INSERT INTO dictionaries (id, cefr, word_count) VALUES (?, ?, 0)');
   const insertName = db.prepare('INSERT INTO dictionary_names (dictionary_id, language, name) VALUES (?, ?, ?)');
-  const insertWord = db.prepare(`INSERT INTO words (id, word, type_id, cefr, phon_br, phon_n_am, definition, example, translation_uk, translation_es, uk, us)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  const insertWord = db.prepare(`INSERT INTO words (id, word, type_id, cefr, phon_br, phon_n_am, definition, example, translation_uk, translation_es)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
   const insertWordType = db.prepare('INSERT INTO word_types (id, code) VALUES (?, ?)');
   const insertWordTypeName = db.prepare('INSERT INTO word_type_names (type_id, language, name) VALUES (?, ?, ?)');
   const insertRelation = db.prepare('INSERT INTO dictionary_words (dictionary_id, word_id) VALUES (?, ?)');
@@ -158,7 +155,7 @@ try {
     Object.entries(names).forEach(([language, name]) => insertWordTypeName.run(id, language, name));
   });
   for (const entry of entries) {
-    insertWord.run(entry.id, entry.word, wordTypeIds.get(entry.type), entry.cefrRaw, entry.phon_br, entry.phon_n_am, entry.definition, entry.example, entry.translation_uk, entry.translation_es, entry.uk, entry.us);
+    insertWord.run(entry.id, entry.word, wordTypeIds.get(entry.type), entry.cefrRaw, entry.phon_br, entry.phon_n_am, entry.definition, entry.example, entry.translation_uk, entry.translation_es);
     entry.cefr.forEach((cefr) => insertRelation.run(dictionaryIds.get(cefr), entry.id));
   }
   for (const id of dictionaryIds.values()) updateCount.run(id, id);

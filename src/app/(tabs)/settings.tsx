@@ -55,13 +55,16 @@ export default function SettingsScreen() {
   );
 
   return (
-    <ScrollView
-      style={{ backgroundColor: theme.background }}
-      contentContainerStyle={styles.scrollContent}
-      onTouchStart={() => {
-        if (openDropdown) setOpenDropdown(null);
-      }}>
+    <ScrollView style={{ backgroundColor: theme.background }} contentContainerStyle={styles.scrollContent}>
       <ThemedView style={styles.content}>
+        {openDropdown && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close menu"
+            onPress={() => setOpenDropdown(null)}
+            style={styles.dropdownDismissLayer}
+          />
+        )}
         <View style={styles.header}>
           <ThemedText type="title">{t('settings.title')}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{t('settings.description')}</ThemedText>
@@ -106,7 +109,6 @@ function SettingsDropdown<T extends string>({ label, value, options, open, onTog
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
-        onTouchStart={(event) => event.stopPropagation()}
         onPress={onToggle}
         style={[styles.dropdownTrigger, { backgroundColor: theme.background, borderColor: open ? theme.primary : theme.border }]}>
         <OptionLabel flag={selectedOption?.flag} label={selectedOption?.label ?? value} />
@@ -115,7 +117,7 @@ function SettingsDropdown<T extends string>({ label, value, options, open, onTog
       {open && <View style={[styles.dropdownMenu, { backgroundColor: theme.background, borderColor: theme.border }]}>
         {options.map((option) => {
           const selected = option.value === value;
-          return <Pressable key={option.value} accessibilityRole="button" accessibilityState={{ selected }} onTouchStart={(event) => event.stopPropagation()} onPress={() => onSelect(option.value)}
+          return <Pressable key={option.value} accessibilityRole="button" accessibilityState={{ selected }} onPress={() => onSelect(option.value)}
             style={[styles.dropdownOption, selected && { backgroundColor: theme.backgroundSelected }]}>
             <OptionLabel flag={option.flag} label={option.label} themeColor={selected ? 'accent' : 'textSecondary'} />
             {selected && <MaterialCommunityIcons name="check" size={21} color={theme.accent} />}
@@ -135,10 +137,11 @@ function OptionLabel({ flag, label, themeColor }: { flag?: string; label: string
 
 const styles = StyleSheet.create({
   scrollContent: { flexDirection: 'row', justifyContent: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.four },
-  content: { maxWidth: MaxContentWidth, flexGrow: 1, gap: Spacing.four },
+  content: { maxWidth: MaxContentWidth, flexGrow: 1, gap: Spacing.four, position: 'relative' },
   header: { gap: Spacing.two },
-  dropdownSection: { gap: Spacing.two, position: 'relative', zIndex: 1 },
-  dropdownSectionOpen: { zIndex: 10 },
+  dropdownDismissLayer: { position: 'absolute', zIndex: 5, top: -Spacing.four, right: -Spacing.three, bottom: -Spacing.four, left: -Spacing.three },
+  dropdownSection: { gap: Spacing.two, position: 'relative', zIndex: 10 },
+  dropdownSectionOpen: { zIndex: 20 },
   dropdownTrigger: { minHeight: 52, borderWidth: 1, borderRadius: 14, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   dropdownMenu: { position: 'absolute', top: '100%', right: 0, left: 0, marginTop: Spacing.two, borderRadius: 14, overflow: 'hidden', borderWidth: 1, elevation: 8 },
   dropdownOption: { minHeight: 48, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

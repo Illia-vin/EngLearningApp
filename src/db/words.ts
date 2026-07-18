@@ -12,8 +12,6 @@ export interface DictionaryWord {
   translation_uk: string;
   translation_es: string;
   translation: string;
-  uk: string;
-  us: string;
 }
 
 export interface DictionaryWordsPage { limit?: number; offset?: number }
