@@ -22,6 +22,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import {
+  getCachedStudySnapshot,
   getStudySnapshot,
   markWordKnown,
   reviewWord,
@@ -39,8 +40,10 @@ import type { DictionaryWord } from '@/db/words';
 type StudyMode = 'review' | 'new';
 
 const EMPTY_SNAPSHOT: StudySnapshot = {
-  dueWords: [],
-  newWords: [],
+  dueWord: null,
+  newWord: null,
+  dueWordCount: 0,
+  newWordCount: 0,
   enabledDictionaryCount: 0,
   learningCount: 0,
   nextReviewAt: null,
@@ -51,26 +54,27 @@ const SWIPE_OUT_DISTANCE = Dimensions.get('window').width * 1.35;
 
 export default function WordsScreen({ mode }: { mode?: StudyMode }) {
   const router = useRouter();
-  const [snapshot, setSnapshot] = useState<StudySnapshot>(EMPTY_SNAPSHOT);
   const activeMode = mode ?? null;
-  const [detailsVisible, setDetailsVisible] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
   const { englishVariant, locale, translationLanguage, t } = useLanguage();
+  const initialSnapshot = getCachedStudySnapshot(translationLanguage, locale);
+  const [snapshot, setSnapshot] = useState<StudySnapshot>(initialSnapshot ?? EMPTY_SNAPSHOT);
+  const [detailsVisible, setDetailsVisible] = useState(false);
+  const [loading, setLoading] = useState(!initialSnapshot);
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (forceRefresh = activeMode === null) => {
     setError(null);
     try {
-      setSnapshot(await getStudySnapshot(translationLanguage, locale));
+      setSnapshot(await getStudySnapshot(translationLanguage, locale, forceRefresh));
       setDetailsVisible(false);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t('words.error'));
     } finally {
       setLoading(false);
     }
-  }, [locale, t, translationLanguage]);
+  }, [activeMode, locale, t, translationLanguage]);
 
   useFocusEffect(
     useCallback(() => {
@@ -83,7 +87,7 @@ export default function WordsScreen({ mode }: { mode?: StudyMode }) {
     setError(null);
     try {
       await action();
-      await reload();
+      await reload(true);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t('words.error'));
     } finally {
@@ -91,8 +95,8 @@ export default function WordsScreen({ mode }: { mode?: StudyMode }) {
     }
   };
 
-  const currentNewWord = snapshot.newWords[0];
-  const currentReviewWord = snapshot.dueWords[0];
+  const currentNewWord = snapshot.newWord;
+  const currentReviewWord = snapshot.dueWord;
   const nextReviewText = snapshot.nextReviewAt
     ? new Date(snapshot.nextReviewAt * 1000).toLocaleString(locale)
     : null;
@@ -110,16 +114,29 @@ export default function WordsScreen({ mode }: { mode?: StudyMode }) {
           {activeMode && (
             <BackButton accessibilityLabel={t('common.back')} onPress={() => router.back()} />
           )}
-          <ThemedText type={activeMode ? 'subtitle' : 'title'} style={styles.flexText}>
-            {activeMode === 'review'
-              ? t('words.review.title')
-              : activeMode === 'new'
-                ? t('words.new.title')
-                : t('words.title')}
-          </ThemedText>
+          <View style={styles.titleText}>
+            <ThemedText type={activeMode ? 'subtitle' : 'title'}>
+              {activeMode === 'review'
+                ? t('words.review.title')
+                : activeMode === 'new'
+                  ? t('words.new.title')
+                  : t('words.title')}
+            </ThemedText>
+            {activeMode === 'new' && (
+              <ThemedText type="small" themeColor="textSecondary" style={loading && styles.loadingSubtitle}>
+                {loading ? '\u00A0' : `${t('words.new.remaining')}: ${snapshot.newWordCount}`}
+              </ThemedText>
+            )}
+            {activeMode === 'review' && (
+              <ThemedText type="small" themeColor="textSecondary" style={loading && styles.loadingSubtitle}>
+                {loading ? '\u00A0' : `${t('words.review.remainingToReview', 'Words left to review')}: ${snapshot.dueWordCount}`}
+              </ThemedText>
+            )}
+          </View>
         </View>
 
-        {loading && <ActivityIndicator size="large" color={theme.textSecondary} />}
+        {loading && !activeMode && <ActivityIndicator size="large" color={theme.textSecondary} />}
+        {loading && activeMode && <StudyCardSkeleton />}
         {error && <ThemedText themeColor="textSecondary">{error}</ThemedText>}
 
         {!loading && !activeMode && (
@@ -132,14 +149,14 @@ export default function WordsScreen({ mode }: { mode?: StudyMode }) {
               icon="history"
               title={t('words.review.title')}
               description={
-                snapshot.dueWords.length > 0
+                snapshot.dueWordCount > 0
                   ? t('words.review.available')
                   : snapshot.learningCount === 0
                     ? t('words.review.noLearningWords')
                     : `${t('words.review.nothingDue')}${nextReviewText ? ` ${nextReviewText}` : ''}`
               }
-              count={snapshot.dueWords.length}
-              disabled={snapshot.dueWords.length === 0}
+              count={snapshot.dueWordCount}
+              disabled={snapshot.dueWordCount === 0}
               onPress={() =>
                 router.push({ pathname: '/study/[mode]', params: { mode: 'review' } })
               }
@@ -151,12 +168,12 @@ export default function WordsScreen({ mode }: { mode?: StudyMode }) {
               description={
                 snapshot.enabledDictionaryCount === 0
                   ? t('words.new.noDictionaries')
-                  : snapshot.newWords.length === 0
+                  : snapshot.newWordCount === 0
                     ? t('words.new.empty')
                     : t('words.new.description')
               }
-              count={snapshot.newWords.length}
-              disabled={snapshot.newWords.length === 0}
+              count={snapshot.newWordCount}
+              disabled={snapshot.newWordCount === 0}
               onPress={() =>
                 router.push({ pathname: '/study/[mode]', params: { mode: 'new' } })
               }
@@ -180,7 +197,6 @@ export default function WordsScreen({ mode }: { mode?: StudyMode }) {
               <StudyWordCard
                 word={currentNewWord}
                 englishVariant={englishVariant}
-                remainingLabel={`${t('words.new.remaining')}: ${snapshot.newWords.length}`}
                 detailsVisible
               />
             </SwipeStudyCard>
@@ -505,6 +521,15 @@ function StudyWordCard({
   );
 }
 
+function StudyCardSkeleton() {
+  const theme = useTheme();
+  return (
+    <ThemedView type="backgroundElement" style={[styles.studyCardSkeleton, { borderColor: theme.border }]}>
+      <ActivityIndicator size="large" color={theme.textSecondary} />
+    </ThemedView>
+  );
+}
+
 function RevealDetailsButton({
   label,
   disabled,
@@ -674,8 +699,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
   },
-  flexText: {
+  titleText: {
     flex: 1,
+    gap: Spacing.half,
+  },
+  loadingSubtitle: {
+    opacity: 0,
   },
   modeCard: {
     padding: Spacing.three,
@@ -788,6 +817,15 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     paddingBottom: 132,
     borderWidth: 1,
+  },
+  studyCardSkeleton: {
+    flex: 1,
+    minHeight: 420,
+    width: '100%',
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   compactStudyCard: {
     justifyContent: 'center',

@@ -17,6 +17,7 @@ export interface DictionaryWord {
 }
 
 export interface DictionaryWordsPage { limit?: number; offset?: number }
+export interface WordReference { id: number; word: string }
 
 function decodeWordPhonetics(word: DictionaryWord): DictionaryWord {
   return {
@@ -29,6 +30,19 @@ function decodeWordPhonetics(word: DictionaryWord): DictionaryWord {
 export async function contentWordExists(wordId: number): Promise<boolean> {
   const database = await getContentDatabase();
   return Boolean(await database.getFirstAsync<{ id: number }>('SELECT id FROM words WHERE id = ? LIMIT 1', [wordId]));
+}
+
+export async function getWordReferencesForDictionaries(dictionaryIds: number[]): Promise<WordReference[]> {
+  if (dictionaryIds.length === 0) return [];
+  const database = await getContentDatabase();
+  const placeholders = dictionaryIds.map(() => '?').join(', ');
+  return database.getAllAsync<WordReference>(
+    `SELECT DISTINCT words.id, words.word FROM words
+     INNER JOIN dictionary_words ON dictionary_words.word_id = words.id
+     WHERE dictionary_words.dictionary_id IN (${placeholders})
+     ORDER BY words.word COLLATE NOCASE, words.id`,
+    dictionaryIds,
+  );
 }
 
 function pagination(page?: DictionaryWordsPage) {

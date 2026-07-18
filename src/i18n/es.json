@@ -22,6 +22,7 @@
     "error": "No se pudieron cargar las palabras de la base de datos.",
     "chooseMode": "Elige qué quieres practicar ahora.",
     "review": {
+      "remainingToReview": "Palabras por repasar",
       "show": "Mostrar",
       "title": "Repasar palabras",
       "available": "Hay palabras listas para repasar.",

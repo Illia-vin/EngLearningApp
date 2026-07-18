@@ -1,7 +1,8 @@
-import { getEnabledDictionaryIds } from './dictionaryPreferences';
+import { getEnabledDictionaryIdsForStudy } from './dictionaryPreferences';
 import { getUserDatabase } from './userDatabase';
 import {
-  getWordsForDictionaries,
+  getWord,
+  getWordReferencesForDictionaries,
   type DictionaryWord,
 } from './words';
 import {
@@ -12,8 +13,10 @@ import {
 } from './progress';
 
 export interface StudySnapshot {
-  dueWords: DictionaryWord[];
-  newWords: DictionaryWord[];
+  dueWord: DictionaryWord | null;
+  newWord: DictionaryWord | null;
+  dueWordCount: number;
+  newWordCount: number;
   enabledDictionaryCount: number;
   learningCount: number;
   nextReviewAt: number | null;
@@ -21,6 +24,18 @@ export interface StudySnapshot {
 
 const DAY_SECONDS = 24 * 60 * 60;
 const MIN_REVIEW_INTERVAL_SECONDS = 10 * 60;
+const snapshotCache = new Map<string, StudySnapshot>();
+
+function snapshotCacheKey(language: 'uk' | 'es', displayLanguage: 'uk' | 'en' | 'es') {
+  return `${language}:${displayLanguage}`;
+}
+
+export function getCachedStudySnapshot(
+  language: 'uk' | 'es' = 'uk',
+  displayLanguage: 'uk' | 'en' | 'es' = 'en',
+): StudySnapshot | null {
+  return snapshotCache.get(snapshotCacheKey(language, displayLanguage)) ?? null;
+}
 
 function nowInSeconds() {
   return Math.floor(Date.now() / 1000);
@@ -29,9 +44,13 @@ function nowInSeconds() {
 export async function getStudySnapshot(
   language: 'uk' | 'es' = 'uk',
   displayLanguage: 'uk' | 'en' | 'es' = 'en',
+  forceRefresh = false,
 ): Promise<StudySnapshot> {
-  const enabledDictionaryIds = await getEnabledDictionaryIds();
-  const words = await getWordsForDictionaries(enabledDictionaryIds, language, displayLanguage);
+  const cacheKey = snapshotCacheKey(language, displayLanguage);
+  const cached = snapshotCache.get(cacheKey);
+  if (cached && !forceRefresh) return cached;
+  const enabledDictionaryIds = await getEnabledDictionaryIdsForStudy();
+  const words = await getWordReferencesForDictionaries(enabledDictionaryIds);
   const userDatabase = await getUserDatabase();
   const progressRows = await userDatabase.getAllAsync<UserProgress>(
     'SELECT * FROM user_progress',
@@ -42,13 +61,16 @@ export async function getStudySnapshot(
   const now = nowInSeconds();
   let learningCount = 0;
   let nextReviewAt: number | null = null;
-  const dueWords: DictionaryWord[] = [];
-  const newWords: DictionaryWord[] = [];
+  let dueWordCount = 0;
+  let newWordCount = 0;
+  let nextNewWordId: number | null = null;
+  let nextDueWord: typeof words[number] | null = null;
 
   for (const word of words) {
     const progress = progressByWord.get(word.id);
     if (!progress) {
-      newWords.push(word);
+      newWordCount += 1;
+      nextNewWordId ??= word.id;
       continue;
     }
 
@@ -58,28 +80,34 @@ export async function getStudySnapshot(
 
     learningCount += 1;
     if (progress.next_review_at === null || progress.next_review_at <= now) {
-      dueWords.push(word);
+      dueWordCount += 1;
+      if (
+        !nextDueWord ||
+        progress.updated_at < (progressByWord.get(nextDueWord.id)?.updated_at ?? 0) ||
+        (progress.updated_at === (progressByWord.get(nextDueWord.id)?.updated_at ?? 0) &&
+          word.word.localeCompare(nextDueWord.word) < 0)
+      ) nextDueWord = word;
     } else if (nextReviewAt === null || progress.next_review_at < nextReviewAt) {
       nextReviewAt = progress.next_review_at;
     }
   }
 
-  dueWords.sort((left, right) => {
-    const leftProgress = progressByWord.get(left.id);
-    const rightProgress = progressByWord.get(right.id);
-    return (
-      (leftProgress?.updated_at ?? 0) - (rightProgress?.updated_at ?? 0) ||
-      left.word.localeCompare(right.word)
-    );
-  });
+  const [newWord, dueWord] = await Promise.all([
+    nextNewWordId === null ? null : getWord(nextNewWordId, language, displayLanguage),
+    nextDueWord === null ? null : getWord(nextDueWord.id, language, displayLanguage),
+  ]);
 
-  return {
-    dueWords,
-    newWords,
+  const snapshot = {
+    dueWord,
+    newWord,
+    dueWordCount,
+    newWordCount,
     enabledDictionaryCount: enabledDictionaryIds.length,
     learningCount,
     nextReviewAt,
   };
+  snapshotCache.set(cacheKey, snapshot);
+  return snapshot;
 }
 
 export async function markWordKnown(word_id: number): Promise<void> {

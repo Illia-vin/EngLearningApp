@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as React from 'react';
 import {
   BackHandler,
+  InteractionManager,
   Platform,
   StyleSheet,
   ToastAndroid,
@@ -13,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { LanguageProvider, useLanguage } from '@/i18n';
+import { initDatabases } from '@/db/database';
 
 const EXIT_CONFIRMATION_WINDOW_MS = 2000;
 
@@ -49,6 +51,18 @@ function AndroidDoubleBackExit() {
   return null;
 }
 
+function DatabaseWarmup() {
+  React.useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      void initDatabases().catch(() => {
+        // The study screen will retry and surface any real database error.
+      });
+    });
+    return () => task.cancel();
+  }, []);
+  return null;
+}
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
@@ -71,6 +85,7 @@ export default function TabLayout() {
       <ThemeProvider value={navigationTheme}>
         <LanguageProvider>
           <AndroidDoubleBackExit />
+          <DatabaseWarmup />
           <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
           <SafeAreaView
             edges={['top']}
