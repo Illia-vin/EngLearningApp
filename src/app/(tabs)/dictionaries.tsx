@@ -7,7 +7,7 @@ import {
   Switch,
   View,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import { ThemedText } from '@/components/themed-text';
@@ -22,9 +22,9 @@ import {
 } from '@/db/dictionaryPreferences';
 import { getDictionaryWords, type DictionaryWord } from '@/db/words';
 
-export default function DictionariesScreen() {
+export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: string }) {
+  const router = useRouter();
   const [dictionaries, setDictionaries] = useState<DictionarySelection[]>([]);
-  const [selectedDictionary, setSelectedDictionary] = useState<DictionarySelection | null>(null);
   const [dictionaryWords, setDictionaryWords] = useState<DictionaryWord[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -38,13 +38,6 @@ export default function DictionariesScreen() {
     try {
       const result = await getDictionarySelections(locale);
       setDictionaries(result);
-      setSelectedDictionary((current) =>
-        current
-          ? result.find(
-              (dictionary) => dictionary.dictionary_key === current.dictionary_key,
-            ) ?? current
-          : null,
-      );
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
@@ -85,9 +78,16 @@ export default function DictionariesScreen() {
     }
   };
 
-  const openDictionary = async (dictionary: DictionarySelection) => {
-    setSelectedDictionary(dictionary);
+  const openDictionary = (dictionary: DictionarySelection) => {
+    router.push({
+      pathname: '/dictionary/[dictionaryKey]',
+      params: { dictionaryKey: dictionary.dictionary_key },
+    });
   };
+
+  const selectedDictionary = dictionaryKey
+    ? dictionaries.find((dictionary) => dictionary.dictionary_key === dictionaryKey) ?? null
+    : null;
 
   useEffect(() => {
     if (!selectedDictionary) {
@@ -124,7 +124,7 @@ export default function DictionariesScreen() {
         <ThemedView style={styles.content}>
           <Pressable
             accessibilityRole="button"
-            onPress={() => setSelectedDictionary(null)}
+            onPress={() => router.back()}
             style={styles.backButton}>
             <MaterialCommunityIcons name="arrow-left" size={22} color={theme.accent} />
             <ThemedText type="smallBold">{t('common.back')}</ThemedText>
@@ -209,7 +209,7 @@ export default function DictionariesScreen() {
 
             <Pressable
               accessibilityRole="button"
-              onPress={() => void openDictionary(dictionary)}
+              onPress={() => openDictionary(dictionary)}
               style={({ pressed }) => [
                 styles.openButton,
                 {

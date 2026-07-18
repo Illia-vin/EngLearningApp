@@ -7,7 +7,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -46,9 +46,10 @@ const EMPTY_SNAPSHOT: StudySnapshot = {
 const SWIPE_THRESHOLD = 96;
 const SWIPE_OUT_DISTANCE = Dimensions.get('window').width * 1.35;
 
-export default function WordsScreen() {
+export default function WordsScreen({ mode }: { mode?: StudyMode }) {
+  const router = useRouter();
   const [snapshot, setSnapshot] = useState<StudySnapshot>(EMPTY_SNAPSHOT);
-  const [activeMode, setActiveMode] = useState<StudyMode | null>(null);
+  const activeMode = mode ?? null;
   const [translationVisible, setTranslationVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -107,7 +108,7 @@ export default function WordsScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('common.back')}
-              onPress={() => setActiveMode(null)}
+              onPress={() => router.back()}
               style={styles.iconButton}>
               <MaterialCommunityIcons name="arrow-left" size={26} color={theme.accent} />
             </Pressable>
@@ -142,7 +143,9 @@ export default function WordsScreen() {
               }
               count={snapshot.dueWords.length}
               disabled={snapshot.dueWords.length === 0}
-              onPress={() => setActiveMode('review')}
+              onPress={() =>
+                router.push({ pathname: '/study/[mode]', params: { mode: 'review' } })
+              }
             />
 
             <ModeCard
@@ -157,7 +160,9 @@ export default function WordsScreen() {
               }
               count={snapshot.newWords.length}
               disabled={snapshot.newWords.length === 0}
-              onPress={() => setActiveMode('new')}
+              onPress={() =>
+                router.push({ pathname: '/study/[mode]', params: { mode: 'new' } })
+              }
             />
           </>
         )}
