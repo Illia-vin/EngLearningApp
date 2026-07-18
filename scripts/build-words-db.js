@@ -1,283 +1,179 @@
-const {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  renameSync,
-  rmSync,
-} = require('node:fs');
+const { existsSync, mkdirSync, readFileSync, renameSync, rmSync } = require('node:fs');
 const { join, resolve } = require('node:path');
 const { DatabaseSync } = require('node:sqlite');
 
 const projectRoot = resolve(__dirname, '..');
-const dictionariesDirectory = join(projectRoot, 'src', 'db', 'seeds', 'dictionaries');
+const sourcePath = join(projectRoot, 'src', 'db', 'seeds', 'dictionaries', 'oxford_5000.json');
 const outputDirectory = join(projectRoot, 'assets', 'databases');
 const outputPath = join(outputDirectory, 'words.db');
 const temporaryOutputPath = `${outputPath}.tmp`;
-const KEY_PATTERN = /^[a-z][a-z0-9_]*$/;
+const dictionaryNames = {
+  a1: { en: 'Beginner (A1)', uk: 'Початковий (A1)', es: 'Principiante (A1)' },
+  a2: { en: 'Elementary (A2)', uk: 'Базовий (A2)', es: 'Elemental (A2)' },
+  b1: { en: 'Intermediate (B1)', uk: 'Середній (B1)', es: 'Intermedio (B1)' },
+  b2: { en: 'Upper-intermediate (B2)', uk: 'Вище середнього (B2)', es: 'Intermedio alto (B2)' },
+  c1: { en: 'Advanced (C1)', uk: 'Просунутий (C1)', es: 'Avanzado (C1)' },
+};
+const wordTypeNames = {
+  adjective: { en: 'Adjective', uk: 'Прикметник', es: 'Adjetivo' },
+  adverb: { en: 'Adverb', uk: 'Прислівник', es: 'Adverbio' },
+  'auxiliary verb': { en: 'Auxiliary verb', uk: 'Допоміжне дієслово', es: 'Verbo auxiliar' },
+  conjunction: { en: 'Conjunction', uk: 'Сполучник', es: 'Conjunción' },
+  'definite article': { en: 'Definite article', uk: 'Означений артикль', es: 'Artículo definido' },
+  determiner: { en: 'Determiner', uk: 'Визначник', es: 'Determinante' },
+  exclamation: { en: 'Exclamation', uk: 'Вигук', es: 'Exclamación' },
+  'indefinite article': { en: 'Indefinite article', uk: 'Неозначений артикль', es: 'Artículo indefinido' },
+  'infinitive marker': { en: 'Infinitive marker', uk: 'Маркер інфінітива', es: 'Marcador de infinitivo' },
+  'linking verb': { en: 'Linking verb', uk: 'Дієслово-зв’язка', es: 'Verbo copulativo' },
+  'modal verb': { en: 'Modal verb', uk: 'Модальне дієслово', es: 'Verbo modal' },
+  noun: { en: 'Noun', uk: 'Іменник', es: 'Sustantivo' },
+  number: { en: 'Number', uk: 'Числівник', es: 'Número' },
+  'ordinal number': { en: 'Ordinal number', uk: 'Порядковий числівник', es: 'Número ordinal' },
+  preposition: { en: 'Preposition', uk: 'Прийменник', es: 'Preposición' },
+  pronoun: { en: 'Pronoun', uk: 'Займенник', es: 'Pronombre' },
+  verb: { en: 'Verb', uk: 'Дієслово', es: 'Verbo' },
+};
 
-function normalizeWord(value) {
-  return String(value ?? '').trim().toLowerCase();
+function normalizeCefr(value, entryId) {
+  const values = Array.isArray(value) ? value : [value];
+  const levels = values.flatMap((item) => {
+    if (typeof item === 'string') return [item];
+    if (item && typeof item === 'object') return Object.values(item);
+    return [];
+  }).map((level) => String(level).trim().toLowerCase()).filter(Boolean);
+  const unique = [...new Set(levels)];
+  if (unique.length === 0 || unique.some((level) => !dictionaryNames[level])) {
+    throw new Error(`Invalid CEFR value for word ${entryId}: ${JSON.stringify(value)}`);
+  }
+  return unique;
 }
 
-function validateLocalizedNames(dictionaryKey, names) {
-  if (!names || typeof names !== 'object' || Array.isArray(names)) {
-    throw new Error(`${dictionaryKey} name must be an object keyed by language`);
-  }
-  if (typeof names.en !== 'string' || !names.en.trim()) {
-    throw new Error(`${dictionaryKey} must have a non-empty English name fallback`);
-  }
+function text(value, field, entryId) {
+  if (typeof value !== 'string') throw new Error(`${field} must be a string for word ${entryId}`);
+  return value;
 }
 
-function normalizeTranslationVariants(word, language, rawVariants) {
-  if (!Array.isArray(rawVariants)) {
-    throw new Error(`${word}.${language} must be an array of translations`);
-  }
-
-  const variants = rawVariants
-    .map((value) => String(value ?? '').trim())
-    .filter(Boolean);
-  const uniqueVariants = [...new Set(variants)];
-  if (uniqueVariants.length === 0) {
-    throw new Error(`${word}.${language} must contain a non-empty translation`);
-  }
-  return uniqueVariants;
+function encodedPhonetic(value, field, entryId) {
+  return encodeURIComponent(text(value, field, entryId));
 }
 
-const seedFiles = readdirSync(dictionariesDirectory, { withFileTypes: true })
-  .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
-  .map((entry) => entry.name)
-  .sort();
+const raw = JSON.parse(readFileSync(sourcePath, 'utf8'));
+const entries = Object.entries(raw)
+  .filter(([id]) => /^\d+$/.test(id))
+  .map(([rawId, entry]) => {
+    const id = Number(rawId);
+    if (!Number.isSafeInteger(id) || id < 0 || !entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw new Error(`Invalid word entry ${rawId}`);
+    }
+    const cefr = normalizeCefr(entry.cefr, id);
+    return {
+      id,
+      word: text(entry.word, 'word', id), type: text(entry.type, 'type', id), cefr, cefrRaw: typeof entry.cefr === 'string' ? entry.cefr : JSON.stringify(entry.cefr),
+      phon_br: encodedPhonetic(entry.phon_br, 'phon_br', id), phon_n_am: encodedPhonetic(entry.phon_n_am, 'phon_n_am', id),
+      definition: text(entry.definition, 'definition', id), example: text(entry.example, 'example', id),
+      translation_uk: text(entry.translation_uk, 'translation_uk', id),
+      translation_es: text(entry.translation_es, 'translation_es', id),
+      uk: text(entry.uk, 'uk', id), us: text(entry.us, 'us', id),
+    };
+  })
+  .sort((left, right) => left.id - right.id);
 
-if (seedFiles.length === 0) {
-  throw new Error(`No dictionary seeds found in ${dictionariesDirectory}`);
-}
-
-const mergedWords = new Map();
-const manifest = seedFiles.map((fileName) => {
-  const dictionary = JSON.parse(
-    readFileSync(join(dictionariesDirectory, fileName), 'utf8'),
-  );
-
-  if (!dictionary || typeof dictionary !== 'object' || Array.isArray(dictionary)) {
-    throw new Error(`${fileName} must contain exactly one dictionary object`);
-  }
-  if (!KEY_PATTERN.test(dictionary.dictionary_key)) {
-    throw new Error(`Invalid dictionary_key in ${fileName}`);
-  }
-  if (fileName !== `${dictionary.dictionary_key}.json`) {
-    throw new Error(`${fileName} must match dictionary_key ${dictionary.dictionary_key}`);
-  }
-  validateLocalizedNames(dictionary.dictionary_key, dictionary.name);
-
-  if (
-    !dictionary.words ||
-    typeof dictionary.words !== 'object' ||
-    Array.isArray(dictionary.words)
-  ) {
-    throw new Error(`${dictionary.dictionary_key} words must be an object`);
-  }
-
-  const languages = new Set();
-  const words = Object.entries(dictionary.words).map(
-    ([rawEnglishWord, rawTranslations], position) => {
-      const word = normalizeWord(rawEnglishWord);
-      if (!word) {
-        throw new Error(`Empty English word in ${dictionary.dictionary_key}`);
-      }
-      if (
-        !rawTranslations ||
-        typeof rawTranslations !== 'object' ||
-        Array.isArray(rawTranslations)
-      ) {
-        throw new Error(`${word} translations must be an object keyed by language`);
-      }
-
-      let mergedTranslations = mergedWords.get(word);
-      if (!mergedTranslations) {
-        mergedTranslations = new Map();
-        mergedWords.set(word, mergedTranslations);
-      }
-
-      for (const [language, rawVariants] of Object.entries(rawTranslations)) {
-        if (!KEY_PATTERN.test(language)) {
-          throw new Error(`Invalid translation language for ${word}: ${language}`);
-        }
-
-        const variants = normalizeTranslationVariants(word, language, rawVariants);
-        const storedVariants = mergedTranslations.get(language) ?? [];
-        for (const variant of variants) {
-          if (!storedVariants.includes(variant)) {
-            storedVariants.push(variant);
-          }
-        }
-        mergedTranslations.set(language, storedVariants);
-        languages.add(language);
-      }
-
-      return { word, position };
-    },
-  );
-
-  if (words.length === 0) {
-    throw new Error(`${dictionary.dictionary_key} must contain at least one word`);
-  }
-
-  return { ...dictionary, words, languages: [...languages].sort() };
-});
-
-if (manifest.filter((dictionary) => dictionary.is_default).length !== 1) {
-  throw new Error('Exactly one dictionary must have is_default=true');
-}
+if (entries.length === 0) throw new Error('Oxford source contains no word entries');
+if (new Set(entries.map((entry) => entry.id)).size !== entries.length) throw new Error('Duplicate word IDs');
+if (entries.some((entry) => !wordTypeNames[entry.type])) throw new Error('Unknown word type in Oxford source');
 
 mkdirSync(outputDirectory, { recursive: true });
-if (existsSync(temporaryOutputPath)) {
-  rmSync(temporaryOutputPath);
-}
-
+if (existsSync(temporaryOutputPath)) rmSync(temporaryOutputPath);
 const db = new DatabaseSync(temporaryOutputPath);
 try {
   db.exec(`
     PRAGMA foreign_keys = ON;
     PRAGMA journal_mode = DELETE;
-    PRAGMA user_version = 6;
+    PRAGMA user_version = 1;
 
     CREATE TABLE dictionaries (
-      dictionary_key TEXT PRIMARY KEY,
-      is_default INTEGER NOT NULL DEFAULT 0 CHECK (is_default IN (0, 1))
-    ) WITHOUT ROWID;
-
-    CREATE UNIQUE INDEX one_default_dictionary
-      ON dictionaries(is_default)
-      WHERE is_default = 1;
-
+      id INTEGER PRIMARY KEY,
+      cefr TEXT NOT NULL UNIQUE,
+      word_count INTEGER NOT NULL CHECK (word_count >= 0)
+    );
     CREATE TABLE dictionary_names (
-      dictionary_key TEXT NOT NULL,
+      dictionary_id INTEGER NOT NULL REFERENCES dictionaries(id) ON DELETE CASCADE,
       language TEXT NOT NULL,
       name TEXT NOT NULL,
-      PRIMARY KEY (dictionary_key, language),
-      FOREIGN KEY (dictionary_key) REFERENCES dictionaries(dictionary_key) ON DELETE CASCADE
+      PRIMARY KEY (dictionary_id, language)
     ) WITHOUT ROWID;
-
-    CREATE TABLE dictionary_languages (
-      dictionary_key TEXT NOT NULL,
-      language TEXT NOT NULL,
-      PRIMARY KEY (dictionary_key, language),
-      FOREIGN KEY (dictionary_key) REFERENCES dictionaries(dictionary_key) ON DELETE CASCADE
-    ) WITHOUT ROWID;
-
     CREATE TABLE words (
-      word TEXT PRIMARY KEY COLLATE NOCASE
-    ) WITHOUT ROWID;
-
-    CREATE TABLE translations (
-      word TEXT NOT NULL COLLATE NOCASE,
+      id INTEGER PRIMARY KEY,
+      word TEXT NOT NULL,
+      type_id INTEGER NOT NULL REFERENCES word_types(id),
+      cefr TEXT NOT NULL,
+      phon_br TEXT NOT NULL,
+      phon_n_am TEXT NOT NULL,
+      definition TEXT NOT NULL,
+      example TEXT NOT NULL,
+      translation_uk TEXT NOT NULL,
+      translation_es TEXT NOT NULL,
+      uk TEXT NOT NULL,
+      us TEXT NOT NULL
+    );
+    CREATE TABLE word_types (
+      id INTEGER PRIMARY KEY,
+      code TEXT NOT NULL UNIQUE
+    );
+    CREATE TABLE word_type_names (
+      type_id INTEGER NOT NULL REFERENCES word_types(id) ON DELETE CASCADE,
       language TEXT NOT NULL,
-      translation TEXT NOT NULL,
-      position INTEGER NOT NULL,
-      PRIMARY KEY (word, language, position),
-      UNIQUE (word, language, translation),
-      FOREIGN KEY (word) REFERENCES words(word) ON DELETE CASCADE
+      name TEXT NOT NULL,
+      PRIMARY KEY (type_id, language)
     ) WITHOUT ROWID;
-
-    CREATE INDEX translations_language ON translations(language);
-
-    CREATE TABLE dictionary_items (
-      dictionary_key TEXT NOT NULL,
-      word TEXT NOT NULL COLLATE NOCASE,
-      position INTEGER NOT NULL,
-      PRIMARY KEY (dictionary_key, word),
-      UNIQUE (dictionary_key, position),
-      FOREIGN KEY (dictionary_key) REFERENCES dictionaries(dictionary_key) ON DELETE CASCADE,
-      FOREIGN KEY (word) REFERENCES words(word) ON DELETE CASCADE
+    CREATE INDEX words_word ON words(word COLLATE NOCASE);
+    CREATE TABLE dictionary_words (
+      dictionary_id INTEGER NOT NULL REFERENCES dictionaries(id) ON DELETE CASCADE,
+      word_id INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
+      PRIMARY KEY (dictionary_id, word_id)
     ) WITHOUT ROWID;
-
-    CREATE INDEX dictionary_items_word ON dictionary_items(word);
+    CREATE INDEX dictionary_words_word_id ON dictionary_words(word_id);
   `);
-
-  const insertDictionary = db.prepare(`
-    INSERT INTO dictionaries (dictionary_key, is_default) VALUES (?, ?)
-  `);
-  const insertDictionaryName = db.prepare(`
-    INSERT INTO dictionary_names (dictionary_key, language, name) VALUES (?, ?, ?)
-  `);
-  const insertDictionaryLanguage = db.prepare(`
-    INSERT INTO dictionary_languages (dictionary_key, language) VALUES (?, ?)
-  `);
-  const insertWord = db.prepare(`INSERT INTO words (word) VALUES (?)`);
-  const insertTranslation = db.prepare(`
-    INSERT INTO translations (word, language, translation, position)
-    VALUES (?, ?, ?, ?)
-  `);
-  const insertDictionaryItem = db.prepare(`
-    INSERT INTO dictionary_items (dictionary_key, word, position) VALUES (?, ?, ?)
-  `);
-
+  const insertDictionary = db.prepare('INSERT INTO dictionaries (id, cefr, word_count) VALUES (?, ?, 0)');
+  const insertName = db.prepare('INSERT INTO dictionary_names (dictionary_id, language, name) VALUES (?, ?, ?)');
+  const insertWord = db.prepare(`INSERT INTO words (id, word, type_id, cefr, phon_br, phon_n_am, definition, example, translation_uk, translation_es, uk, us)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  const insertWordType = db.prepare('INSERT INTO word_types (id, code) VALUES (?, ?)');
+  const insertWordTypeName = db.prepare('INSERT INTO word_type_names (type_id, language, name) VALUES (?, ?, ?)');
+  const insertRelation = db.prepare('INSERT INTO dictionary_words (dictionary_id, word_id) VALUES (?, ?)');
+  const updateCount = db.prepare('UPDATE dictionaries SET word_count = (SELECT COUNT(*) FROM dictionary_words WHERE dictionary_id = ?) WHERE id = ?');
+  const dictionaryIds = new Map();
+  const wordTypeIds = new Map();
   db.exec('BEGIN IMMEDIATE');
-
-  for (const [word, translations] of mergedWords) {
-    insertWord.run(word);
-    for (const [language, variants] of translations) {
-      variants.forEach((translation, position) => {
-        insertTranslation.run(word, language, translation, position);
-      });
-    }
+  Object.entries(dictionaryNames).forEach(([cefr, names], index) => {
+    const id = index + 1;
+    dictionaryIds.set(cefr, id);
+    insertDictionary.run(id, cefr);
+    Object.entries(names).forEach(([language, name]) => insertName.run(id, language, name));
+  });
+  Object.entries(wordTypeNames).forEach(([code, names], index) => {
+    const id = index + 1;
+    wordTypeIds.set(code, id);
+    insertWordType.run(id, code);
+    Object.entries(names).forEach(([language, name]) => insertWordTypeName.run(id, language, name));
+  });
+  for (const entry of entries) {
+    insertWord.run(entry.id, entry.word, wordTypeIds.get(entry.type), entry.cefrRaw, entry.phon_br, entry.phon_n_am, entry.definition, entry.example, entry.translation_uk, entry.translation_es, entry.uk, entry.us);
+    entry.cefr.forEach((cefr) => insertRelation.run(dictionaryIds.get(cefr), entry.id));
   }
-
-  for (const dictionary of manifest) {
-    insertDictionary.run(dictionary.dictionary_key, dictionary.is_default ? 1 : 0);
-
-    for (const [language, rawName] of Object.entries(dictionary.name)) {
-      const name = String(rawName ?? '').trim();
-      if (!KEY_PATTERN.test(language) || !name) {
-        throw new Error(`Invalid ${language} name for ${dictionary.dictionary_key}`);
-      }
-      insertDictionaryName.run(dictionary.dictionary_key, language, name);
-    }
-
-    for (const language of dictionary.languages) {
-      insertDictionaryLanguage.run(dictionary.dictionary_key, language);
-    }
-    for (const { word, position } of dictionary.words) {
-      insertDictionaryItem.run(dictionary.dictionary_key, word, position);
-    }
-  }
-
+  for (const id of dictionaryIds.values()) updateCount.run(id, id);
   db.exec('COMMIT');
-
   const integrity = db.prepare('PRAGMA integrity_check').get();
-  if (integrity.integrity_check !== 'ok') {
-    throw new Error(`SQLite integrity check failed: ${integrity.integrity_check}`);
-  }
-  const foreignKeyErrors = db.prepare('PRAGMA foreign_key_check').all();
-  if (foreignKeyErrors.length > 0) {
-    throw new Error(`SQLite foreign key check failed: ${JSON.stringify(foreignKeyErrors)}`);
-  }
+  if (integrity.integrity_check !== 'ok') throw new Error(`SQLite integrity check failed: ${integrity.integrity_check}`);
+  if (db.prepare('PRAGMA foreign_key_check').all().length) throw new Error('SQLite foreign key check failed');
   db.exec('VACUUM');
 } catch (error) {
-  try {
-    db.exec('ROLLBACK');
-  } catch {
-    // The transaction may already be closed.
-  }
+  try { db.exec('ROLLBACK'); } catch {}
   db.close();
-  if (existsSync(temporaryOutputPath)) {
-    rmSync(temporaryOutputPath);
-  }
+  if (existsSync(temporaryOutputPath)) rmSync(temporaryOutputPath);
   throw error;
 }
-
 db.close();
-try {
-  if (existsSync(outputPath)) {
-    rmSync(outputPath);
-  }
-  renameSync(temporaryOutputPath, outputPath);
-} catch (error) {
-  if (existsSync(temporaryOutputPath)) {
-    rmSync(temporaryOutputPath);
-  }
-  throw error;
-}
-
-console.log(`Created ${outputPath}`);
+if (existsSync(outputPath)) rmSync(outputPath);
+renameSync(temporaryOutputPath, outputPath);
+console.log(`Created ${outputPath} with ${entries.length} words`);

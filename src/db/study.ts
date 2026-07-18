@@ -1,7 +1,6 @@
-import { getEnabledDictionaryKeys } from './dictionaryPreferences';
+import { getEnabledDictionaryIds } from './dictionaryPreferences';
 import { getUserDatabase } from './userDatabase';
 import {
-  DEFAULT_TRANSLATION_LANGUAGE,
   getWordsForDictionaries,
   type DictionaryWord,
 } from './words';
@@ -28,16 +27,17 @@ function nowInSeconds() {
 }
 
 export async function getStudySnapshot(
-  language = DEFAULT_TRANSLATION_LANGUAGE,
+  language: 'uk' | 'es' = 'uk',
+  displayLanguage: 'uk' | 'en' | 'es' = 'en',
 ): Promise<StudySnapshot> {
-  const enabledDictionaryKeys = await getEnabledDictionaryKeys(language);
-  const words = await getWordsForDictionaries(enabledDictionaryKeys, language);
+  const enabledDictionaryIds = await getEnabledDictionaryIds();
+  const words = await getWordsForDictionaries(enabledDictionaryIds, language, displayLanguage);
   const userDatabase = await getUserDatabase();
   const progressRows = await userDatabase.getAllAsync<UserProgress>(
     'SELECT * FROM user_progress',
   );
   const progressByWord = new Map(
-    progressRows.map((progress) => [progress.word.toLowerCase(), progress]),
+    progressRows.map((progress) => [progress.word_id, progress]),
   );
   const now = nowInSeconds();
   let learningCount = 0;
@@ -46,7 +46,7 @@ export async function getStudySnapshot(
   const newWords: DictionaryWord[] = [];
 
   for (const word of words) {
-    const progress = progressByWord.get(word.word.toLowerCase());
+    const progress = progressByWord.get(word.id);
     if (!progress) {
       newWords.push(word);
       continue;
@@ -65,8 +65,8 @@ export async function getStudySnapshot(
   }
 
   dueWords.sort((left, right) => {
-    const leftProgress = progressByWord.get(left.word);
-    const rightProgress = progressByWord.get(right.word);
+    const leftProgress = progressByWord.get(left.id);
+    const rightProgress = progressByWord.get(right.id);
     return (
       (leftProgress?.updated_at ?? 0) - (rightProgress?.updated_at ?? 0) ||
       left.word.localeCompare(right.word)
@@ -76,15 +76,15 @@ export async function getStudySnapshot(
   return {
     dueWords,
     newWords,
-    enabledDictionaryCount: enabledDictionaryKeys.length,
+    enabledDictionaryCount: enabledDictionaryIds.length,
     learningCount,
     nextReviewAt,
   };
 }
 
-export async function markWordKnown(word: string): Promise<void> {
+export async function markWordKnown(word_id: number): Promise<void> {
   await saveWordProgress({
-    word,
+    word_id,
     status: 'known',
     ease_factor: 2.5,
     interval_days: 0,
@@ -95,9 +95,9 @@ export async function markWordKnown(word: string): Promise<void> {
   });
 }
 
-export async function startLearningWord(word: string): Promise<void> {
+export async function startLearningWord(word_id: number): Promise<void> {
   await saveWordProgress({
-    word,
+    word_id,
     status: 'learning',
     ease_factor: 2.5,
     interval_days: 0,
@@ -109,12 +109,12 @@ export async function startLearningWord(word: string): Promise<void> {
 }
 
 export async function reviewWord(
-  word: string,
+  word_id: number,
   result: 'again' | 'remembered',
 ): Promise<void> {
-  const progress = await getWordProgress(word);
+  const progress = await getWordProgress(word_id);
   if (!progress || progress.status !== 'learning') {
-    throw new Error(`Word is not being learned: ${word}`);
+    throw new Error(`Word is not being learned: ${word_id}`);
   }
 
   const now = nowInSeconds();

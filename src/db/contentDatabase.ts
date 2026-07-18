@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
 export const CONTENT_DATABASE_NAME = 'words.db';
-const CONTENT_DATABASE_VERSION = 6;
+const CONTENT_DATABASE_VERSION = 1;
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 

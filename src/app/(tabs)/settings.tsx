@@ -9,17 +9,23 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import {
   supportedLanguages,
   supportedTranslationLanguages,
+  supportedEnglishVariants,
   useLanguage,
   type LanguageCode,
   type TranslationLanguageCode,
+  type EnglishVariant,
 } from '@/i18n';
 
-type OpenDropdown = 'interface' | 'translation' | null;
+type OpenDropdown = 'interface' | 'translation' | 'englishVariant' | null;
 
 const languageLabels: Record<LanguageCode, string> = {
   uk: 'Українська',
   en: 'English',
   es: 'Español',
+};
+const englishVariantLabels: Record<EnglishVariant, string> = {
+  british: 'British English',
+  american: 'American English',
 };
 
 export default function SettingsScreen() {
@@ -30,6 +36,8 @@ export default function SettingsScreen() {
     setLocale,
     translationLanguage,
     setTranslationLanguage,
+    englishVariant,
+    setEnglishVariant,
     t,
   } = useLanguage();
 
@@ -40,6 +48,10 @@ export default function SettingsScreen() {
   const translationOptions = supportedTranslationLanguages.map((language) => ({
     value: language,
     label: languageLabels[language],
+  }));
+  const englishVariantOptions = supportedEnglishVariants.map((variant) => ({
+    value: variant,
+    label: englishVariantLabels[variant],
   }));
   return (
     <ScrollView
@@ -77,6 +89,20 @@ export default function SettingsScreen() {
           }
           onSelect={(language) => {
             setTranslationLanguage(language);
+            setOpenDropdown(null);
+          }}
+        />
+
+        <SettingsDropdown<EnglishVariant>
+          label={t('settings.englishVariantLabel', 'English to learn')}
+          value={englishVariant}
+          options={englishVariantOptions}
+          open={openDropdown === 'englishVariant'}
+          onToggle={() =>
+            setOpenDropdown((current) => current === 'englishVariant' ? null : 'englishVariant')
+          }
+          onSelect={(variant) => {
+            setEnglishVariant(variant);
             setOpenDropdown(null);
           }}
         />

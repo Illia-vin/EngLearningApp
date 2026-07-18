@@ -12,7 +12,8 @@
     "title": "Settings",
     "description": "Configure the interface and word translation languages.",
     "interfaceLanguageLabel": "Interface language",
-    "translationLanguageLabel": "Translation language"
+    "translationLanguageLabel": "Translation language",
+    "englishVariantLabel": "English to learn"
   },
   "words": {
     "title": "Words",
@@ -21,6 +22,7 @@
     "error": "Failed to load words from the database.",
     "chooseMode": "Choose what you want to practice now.",
     "review": {
+      "show": "Show",
       "title": "Review words",
       "available": "Words are ready to review.",
       "noLearningWords": "Start learning new words to unlock this mode.",

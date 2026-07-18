@@ -1,148 +1,88 @@
 import { getContentDatabase } from './contentDatabase';
 
 export interface DictionaryWord {
+  id: number;
   word: string;
+  type: string;
+  cefr: string;
+  phon_br: string;
+  phon_n_am: string;
+  definition: string;
+  example: string;
+  translation_uk: string;
+  translation_es: string;
   translation: string;
+  uk: string;
+  us: string;
 }
 
-export const DEFAULT_TRANSLATION_LANGUAGE = 'uk';
+export interface DictionaryWordsPage { limit?: number; offset?: number }
 
-export interface DictionaryWordsPage {
-  limit?: number;
-  offset?: number;
+function decodeWordPhonetics(word: DictionaryWord): DictionaryWord {
+  return {
+    ...word,
+    phon_br: decodeURIComponent(word.phon_br),
+    phon_n_am: decodeURIComponent(word.phon_n_am),
+  };
 }
 
-export function normalizeEnglishWord(word: string) {
-  return word.trim().toLowerCase();
-}
-
-export async function contentWordExists(word: string): Promise<boolean> {
+export async function contentWordExists(wordId: number): Promise<boolean> {
   const database = await getContentDatabase();
-  const row = await database.getFirstAsync<{ word: string }>(
-    'SELECT word FROM words WHERE word = ? LIMIT 1',
-    [normalizeEnglishWord(word)],
-  );
-  return Boolean(row);
+  return Boolean(await database.getFirstAsync<{ id: number }>('SELECT id FROM words WHERE id = ? LIMIT 1', [wordId]));
 }
 
-async function assertTranslationLanguage(language: string) {
-  if (!/^[a-z][a-z0-9_]*$/.test(language)) {
-    throw new Error(`Translation language is not available: ${language}`);
-  }
-
-  const database = await getContentDatabase();
-  const available = await database.getFirstAsync<{ language: string }>(
-    'SELECT language FROM translations WHERE language = ? LIMIT 1',
-    [language],
-  );
-  if (!available) {
-    throw new Error(`Translation language is not available: ${language}`);
-  }
+function pagination(page?: DictionaryWordsPage) {
+  const offset = page?.offset ?? 0;
+  if (page?.limit !== undefined) return { sql: 'LIMIT ? OFFSET ?', values: [page.limit, offset] };
+  return offset > 0 ? { sql: 'LIMIT -1 OFFSET ?', values: [offset] } : { sql: '', values: [] };
 }
 
 export async function getWordsForDictionaries(
-  dictionaryKeys: string[],
-  language = DEFAULT_TRANSLATION_LANGUAGE,
+  dictionaryIds: number[],
+  language: 'uk' | 'es' = 'uk',
+  displayLanguage: 'uk' | 'en' | 'es' = 'en',
   page?: DictionaryWordsPage,
 ): Promise<DictionaryWord[]> {
-  if (dictionaryKeys.length === 0) {
-    return [];
-  }
-
-  await assertTranslationLanguage(language);
+  if (dictionaryIds.length === 0) return [];
   const database = await getContentDatabase();
-  const placeholders = dictionaryKeys.map(() => '?').join(', ');
-  const limit = page?.limit;
-  const offset = page?.offset ?? 0;
-  const pagination = limit !== undefined
-    ? 'LIMIT ? OFFSET ?'
-    : offset > 0
-      ? 'LIMIT -1 OFFSET ?'
-      : '';
-
-  return database.getAllAsync<DictionaryWord>(
-    `WITH selected_words AS (
-       SELECT DISTINCT word
-       FROM dictionary_items
-       WHERE dictionary_key IN (${placeholders})
-     ), ordered_translations AS (
-       SELECT word, translation
-       FROM translations
-       WHERE language = ?
-       ORDER BY word COLLATE NOCASE, position
-     )
-     SELECT
-       selected_words.word,
-       GROUP_CONCAT(ordered_translations.translation, ', ') AS translation
-     FROM selected_words
-     INNER JOIN ordered_translations
-       ON ordered_translations.word = selected_words.word
-     GROUP BY selected_words.word
-     ORDER BY selected_words.word COLLATE NOCASE ASC
-     ${pagination}`,
-    [
-      ...dictionaryKeys,
-      language,
-      ...(limit !== undefined ? [limit, offset] : offset > 0 ? [offset] : []),
-    ],
+  const placeholders = dictionaryIds.map(() => '?').join(', ');
+  const pageQuery = pagination(page);
+  const words = await database.getAllAsync<DictionaryWord>(
+    `SELECT DISTINCT words.*, COALESCE(word_type_names.name, word_types.code) AS type,
+       CASE ? WHEN 'es' THEN words.translation_es ELSE words.translation_uk END AS translation
+     FROM words
+     INNER JOIN dictionary_words ON dictionary_words.word_id = words.id
+     INNER JOIN word_types ON word_types.id = words.type_id
+     LEFT JOIN word_type_names ON word_type_names.type_id = word_types.id AND word_type_names.language = ?
+     WHERE dictionary_words.dictionary_id IN (${placeholders})
+     ORDER BY words.word COLLATE NOCASE, words.id ${pageQuery.sql}`,
+    [language, displayLanguage, ...dictionaryIds, ...pageQuery.values],
   );
+  return words.map(decodeWordPhonetics);
 }
 
-export async function getDictionaryWords(
-  dictionaryKey: string,
-  language = DEFAULT_TRANSLATION_LANGUAGE,
+export function getDictionaryWords(
+  dictionaryId: number,
+  language: 'uk' | 'es' = 'uk',
+  displayLanguage: 'uk' | 'en' | 'es' = 'en',
   page?: DictionaryWordsPage,
-): Promise<DictionaryWord[]> {
-  return getWordsForDictionaries([dictionaryKey], language, page);
+) {
+  return getWordsForDictionaries([dictionaryId], language, displayLanguage, page);
 }
 
-export async function getWordWithTranslation(
-  word: string,
-  language = DEFAULT_TRANSLATION_LANGUAGE,
+export async function getWord(
+  wordId: number,
+  language: 'uk' | 'es' = 'uk',
+  displayLanguage: 'uk' | 'en' | 'es' = 'en',
 ): Promise<DictionaryWord | null> {
-  await assertTranslationLanguage(language);
   const database = await getContentDatabase();
-  const normalizedWord = normalizeEnglishWord(word);
-  const translations = await database.getAllAsync<{ translation: string }>(
-    `SELECT translation
-     FROM translations
-     WHERE word = ? AND language = ?
-     ORDER BY position`,
-    [normalizedWord, language],
+  const word = await database.getFirstAsync<DictionaryWord>(
+    `SELECT words.*, COALESCE(word_type_names.name, word_types.code) AS type,
+       CASE ? WHEN 'es' THEN words.translation_es ELSE words.translation_uk END AS translation
+     FROM words
+     INNER JOIN word_types ON word_types.id = words.type_id
+     LEFT JOIN word_type_names ON word_type_names.type_id = word_types.id AND word_type_names.language = ?
+     WHERE words.id = ? LIMIT 1`, [language, displayLanguage, wordId],
   );
-
-  return translations.length > 0
-    ? { word: normalizedWord, translation: translations.map((item) => item.translation).join(', ') }
-    : null;
-}
-
-export async function getDefaultDictionaryWords(
-  language = DEFAULT_TRANSLATION_LANGUAGE,
-): Promise<DictionaryWord[]> {
-  await assertTranslationLanguage(language);
-  const database = await getContentDatabase();
-
-  return database.getAllAsync<DictionaryWord>(
-    `WITH selected_words AS (
-       SELECT dictionary_items.word
-       FROM dictionaries
-       INNER JOIN dictionary_items
-         ON dictionary_items.dictionary_key = dictionaries.dictionary_key
-       WHERE dictionaries.is_default = 1
-     ), ordered_translations AS (
-       SELECT word, translation
-       FROM translations
-       WHERE language = ?
-       ORDER BY word COLLATE NOCASE, position
-     )
-     SELECT
-       selected_words.word,
-       GROUP_CONCAT(ordered_translations.translation, ', ') AS translation
-     FROM selected_words
-     INNER JOIN ordered_translations
-       ON ordered_translations.word = selected_words.word
-     GROUP BY selected_words.word
-     ORDER BY selected_words.word COLLATE NOCASE ASC`,
-    [language],
-  );
+  return word ? decodeWordPhonetics(word) : null;
 }

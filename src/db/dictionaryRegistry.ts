@@ -1,75 +1,23 @@
 import { getContentDatabase } from './contentDatabase';
 
-export interface DictionarySummary {
-  dictionary_key: string;
-  name: string;
-  is_default: number;
-  translation_languages: string;
-  word_count: number;
-}
+export interface DictionarySummary { id: number; cefr: string; name: string; word_count: number }
 
-export async function getDictionaries({
-  displayLanguage = 'en',
-  translationLanguage,
-  dictionaryKey,
-}: {
-  displayLanguage?: string;
-  translationLanguage?: string;
-  dictionaryKey?: string;
-} = {}): Promise<DictionarySummary[]> {
+export async function getDictionaries(displayLanguage = 'en'): Promise<DictionarySummary[]> {
   const database = await getContentDatabase();
-  const languageFilter = translationLanguage
-    ? `INNER JOIN dictionary_languages AS supported_language
-         ON supported_language.dictionary_key = dictionaries.dictionary_key
-        AND supported_language.language = ?`
-    : '';
-  const dictionaryFilter = dictionaryKey
-    ? 'WHERE dictionaries.dictionary_key = ?'
-    : '';
-
   return database.getAllAsync<DictionarySummary>(
-    `SELECT
-       dictionaries.dictionary_key,
-       COALESCE(localized_name.name, english_name.name, dictionaries.dictionary_key) AS name,
-       dictionaries.is_default,
-       GROUP_CONCAT(DISTINCT dictionary_languages.language) AS translation_languages,
-       COUNT(DISTINCT dictionary_items.word) AS word_count
+    `SELECT dictionaries.id, dictionaries.cefr, dictionaries.word_count,
+       COALESCE(localized.name, english.name, dictionaries.cefr) AS name
      FROM dictionaries
-     ${languageFilter}
-     LEFT JOIN dictionary_names AS localized_name
-       ON localized_name.dictionary_key = dictionaries.dictionary_key
-      AND localized_name.language = ?
-     LEFT JOIN dictionary_names AS english_name
-       ON english_name.dictionary_key = dictionaries.dictionary_key
-      AND english_name.language = 'en'
-     LEFT JOIN dictionary_languages
-       ON dictionary_languages.dictionary_key = dictionaries.dictionary_key
-     LEFT JOIN dictionary_items
-       ON dictionary_items.dictionary_key = dictionaries.dictionary_key
-     ${dictionaryFilter}
-     GROUP BY dictionaries.dictionary_key
-     ORDER BY dictionaries.is_default DESC, name ASC`,
-    [
-      ...(translationLanguage ? [translationLanguage] : []),
-      displayLanguage,
-      ...(dictionaryKey ? [dictionaryKey] : []),
-    ],
-  );
+     LEFT JOIN dictionary_names AS localized ON localized.dictionary_id = dictionaries.id AND localized.language = ?
+     LEFT JOIN dictionary_names AS english ON english.dictionary_id = dictionaries.id AND english.language = 'en'
+     ORDER BY dictionaries.id`, [displayLanguage]);
 }
 
-export async function getDictionary(
-  dictionaryKey: string,
-  displayLanguage = 'en',
-): Promise<DictionarySummary | null> {
-  const dictionaries = await getDictionaries({ displayLanguage, dictionaryKey });
-  return dictionaries[0] ?? null;
+export async function getDictionary(id: number, displayLanguage = 'en'): Promise<DictionarySummary | null> {
+  return (await getDictionaries(displayLanguage)).find((dictionary) => dictionary.id === id) ?? null;
 }
 
-export async function contentDictionaryExists(dictionaryKey: string): Promise<boolean> {
+export async function contentDictionaryExists(id: number): Promise<boolean> {
   const database = await getContentDatabase();
-  const row = await database.getFirstAsync<{ dictionary_key: string }>(
-    'SELECT dictionary_key FROM dictionaries WHERE dictionary_key = ? LIMIT 1',
-    [dictionaryKey],
-  );
-  return Boolean(row);
+  return Boolean(await database.getFirstAsync<{ id: number }>('SELECT id FROM dictionaries WHERE id = ? LIMIT 1', [id]));
 }

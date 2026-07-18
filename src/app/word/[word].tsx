@@ -6,17 +6,18 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { DetailHeader } from '@/components/detail-header';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Fonts, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/i18n';
 import { getWordProgress, MASTERED_REPETITION_COUNT, resetWordProgress, type UserProgress } from '@/db/progress';
 import { markWordKnown } from '@/db/study';
-import { getWordWithTranslation, type DictionaryWord } from '@/db/words';
+import { getWord, type DictionaryWord } from '@/db/words';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function WordScreen() {
   const { word } = useLocalSearchParams<{ word?: string }>();
+  const wordId = Number(word);
   const router = useRouter();
-  const { translationLanguage, t } = useLanguage();
+  const { englishVariant, locale, translationLanguage, t } = useLanguage();
   const theme = useTheme();
   const [entry, setEntry] = useState<DictionaryWord | null>(null);
   const [progress, setProgress] = useState<UserProgress | null>(null);
@@ -24,19 +25,19 @@ export default function WordScreen() {
   const [updating, setUpdating] = useState(false);
 
   const load = useCallback(async (showLoading = true) => {
-    if (!word) return;
+    if (!Number.isSafeInteger(wordId)) return;
     if (showLoading) setLoading(true);
     try {
       const [wordEntry, wordProgress] = await Promise.all([
-        getWordWithTranslation(word, translationLanguage),
-        getWordProgress(word),
+        getWord(wordId, translationLanguage, locale),
+        getWordProgress(wordId),
       ]);
       setEntry(wordEntry);
       setProgress(wordProgress);
     } finally {
       if (showLoading) setLoading(false);
     }
-  }, [translationLanguage, word]);
+  }, [locale, translationLanguage, wordId]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
@@ -61,12 +62,29 @@ export default function WordScreen() {
   return (
     <ScrollView style={{ backgroundColor: theme.background }} contentContainerStyle={styles.scroll}>
       <ThemedView style={styles.content}>
-        <DetailHeader title={entry?.word ?? word ?? ''} subtitle={t('dictionaries.wordDetails')} onBack={() => router.back()} />
+        <DetailHeader title={t('dictionaries.wordDetails')} subtitle={entry?.word ?? word ?? ''} onBack={() => router.back()} />
         {loading && <ActivityIndicator color={theme.accent} />}
         {!loading && entry && <>
           <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border }]}>
-            <ThemedText type="title" style={styles.capitalize}>{entry.word}</ThemedText>
-            <ThemedText type="subtitle" themeColor="textSecondary">{entry.translation}</ThemedText>
+            <View style={styles.wordOverview}>
+              <ThemedText type="title" style={styles.capitalize}>{entry.word}</ThemedText>
+              <View style={[styles.typeBadge, { backgroundColor: theme.backgroundSelected }]}>
+                <ThemedText type="smallBold" themeColor="accent">{entry.type}</ThemedText>
+              </View>
+              <ThemedText type="default" themeColor="textSecondary" style={styles.transcription}>
+                {englishVariant === 'american' ? entry.phon_n_am : entry.phon_br}
+              </ThemedText>
+            </View>
+            <View style={[styles.translationBlock, { borderColor: theme.border }]}>
+              <ThemedText type="subtitle">{entry.translation}</ThemedText>
+            </View>
+            <View style={styles.definitionBlock}>
+              <ThemedText type="smallBold">{entry.definition}</ThemedText>
+              <View style={styles.exampleRow}>
+                <MaterialCommunityIcons name="format-quote-open" size={20} color={theme.textSecondary} />
+                <ThemedText type="small" themeColor="textSecondary" style={styles.exampleText}>{entry.example}</ThemedText>
+              </View>
+            </View>
           </ThemedView>
           <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border }]}>
             <ThemedText type="smallBold">{t('dictionaries.learningProgress')}</ThemedText>
@@ -89,14 +107,14 @@ export default function WordScreen() {
             <Pressable
               accessibilityState={{ disabled: !canReset }}
               disabled={!canReset}
-              onPress={() => void update(() => resetWordProgress(entry.word))}
+              onPress={() => void update(() => resetWordProgress(entry.id))}
               style={[styles.action, { borderColor: theme.border }, !canReset && styles.disabledAction]}>
               <ThemedText type="smallBold" themeColor="textSecondary">{t('dictionaries.resetProgress')}</ThemedText>
             </Pressable>
             <Pressable
               accessibilityState={{ disabled: !canMarkKnown }}
               disabled={!canMarkKnown}
-              onPress={() => void update(() => markWordKnown(entry.word))}
+              onPress={() => void update(() => markWordKnown(entry.id))}
               style={[
                 styles.action,
                 isKnown
@@ -123,8 +141,15 @@ export default function WordScreen() {
 
 const styles = StyleSheet.create({
   scroll: { flexGrow: 1 }, content: { maxWidth: MaxContentWidth, flexGrow: 1, width: '100%', alignSelf: 'center', padding: Spacing.three, gap: Spacing.three },
-  card: { gap: Spacing.two, padding: Spacing.four, borderRadius: Spacing.three, borderWidth: 1 },
+  card: { gap: Spacing.three, padding: Spacing.four, borderRadius: Spacing.three, borderWidth: 1 },
   capitalize: { textTransform: 'capitalize' }, track: { height: 8, overflow: 'hidden', borderRadius: 4 }, fill: { height: '100%', borderRadius: 4 },
+  wordOverview: { alignItems: 'center', gap: Spacing.two },
+  transcription: { fontFamily: Fonts.sans, fontSize: 20, lineHeight: 36, fontWeight: '400', includeFontPadding: true, paddingHorizontal: Spacing.one, paddingVertical: Spacing.half, textAlign: 'center' },
+  typeBadge: { borderRadius: 999, paddingHorizontal: Spacing.two, paddingVertical: Spacing.one },
+  translationBlock: { alignItems: 'center', paddingVertical: Spacing.two, paddingHorizontal: Spacing.three, borderWidth: 1, borderRadius: Spacing.three },
+  definitionBlock: { gap: Spacing.two },
+  exampleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one },
+  exampleText: { flex: 1, fontStyle: 'italic' },
   actions: { flexDirection: 'row', gap: Spacing.two }, action: { flex: 1, minHeight: 48, paddingHorizontal: Spacing.two, borderWidth: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   disabledAction: { opacity: 0.4 }, knownActionContent: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
 });

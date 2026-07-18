@@ -31,8 +31,9 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BackButton } from '@/components/back-button';
 import { useTheme } from '@/hooks/use-theme';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Fonts, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/i18n';
+import type { DictionaryWord } from '@/db/words';
 
 type StudyMode = 'review' | 'new';
 
@@ -51,24 +52,24 @@ export default function WordsScreen({ mode }: { mode?: StudyMode }) {
   const router = useRouter();
   const [snapshot, setSnapshot] = useState<StudySnapshot>(EMPTY_SNAPSHOT);
   const activeMode = mode ?? null;
-  const [translationVisible, setTranslationVisible] = useState(false);
+  const [detailsVisible, setDetailsVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
-  const { locale, translationLanguage, t } = useLanguage();
+  const { englishVariant, locale, translationLanguage, t } = useLanguage();
 
   const reload = useCallback(async () => {
     setError(null);
     try {
-      setSnapshot(await getStudySnapshot(translationLanguage));
-      setTranslationVisible(false);
+      setSnapshot(await getStudySnapshot(translationLanguage, locale));
+      setDetailsVisible(false);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t('words.error'));
     } finally {
       setLoading(false);
     }
-  }, [t, translationLanguage]);
+  }, [locale, t, translationLanguage]);
 
   useFocusEffect(
     useCallback(() => {
@@ -165,29 +166,22 @@ export default function WordsScreen({ mode }: { mode?: StudyMode }) {
         {!loading && activeMode === 'new' && (
           currentNewWord ? (
             <SwipeStudyCard
-              key={`new-${currentNewWord.word}`}
+              key={`new-${currentNewWord.id}`}
               disabled={processing}
               leftLabel={t('words.new.known')}
               rightLabel={t('words.new.startLearning')}
               onSwipeLeft={() =>
-                void performAction(() => markWordKnown(currentNewWord.word))
+                void performAction(() => markWordKnown(currentNewWord.id))
               }
               onSwipeRight={() =>
-                void performAction(() => startLearningWord(currentNewWord.word))
+                void performAction(() => startLearningWord(currentNewWord.id))
               }>
-              <ThemedView
-                type="backgroundElement"
-                style={[styles.studyCard, { borderColor: theme.border }]}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {t('words.new.remaining')}: {snapshot.newWords.length}
-                </ThemedText>
-                <ThemedText type="title" style={styles.word}>
-                  {currentNewWord.word}
-                </ThemedText>
-                <ThemedText type="subtitle" themeColor="textSecondary">
-                  {currentNewWord.translation}
-                </ThemedText>
-              </ThemedView>
+              <StudyWordCard
+                word={currentNewWord}
+                englishVariant={englishVariant}
+                remainingLabel={`${t('words.new.remaining')}: ${snapshot.newWords.length}`}
+                detailsVisible
+              />
             </SwipeStudyCard>
           ) : (
             <EmptyState
@@ -201,38 +195,24 @@ export default function WordsScreen({ mode }: { mode?: StudyMode }) {
         {!loading && activeMode === 'review' && (
           currentReviewWord ? (
             <SwipeStudyCard
-              key={`review-${currentReviewWord.word}`}
+              key={`review-${currentReviewWord.id}`}
               disabled={processing}
               leftLabel={t('words.review.again')}
               rightLabel={t('words.review.remembered')}
               onSwipeLeft={() =>
-                void performAction(() => reviewWord(currentReviewWord.word, 'again'))
+                void performAction(() => reviewWord(currentReviewWord.id, 'again'))
               }
               onSwipeRight={() =>
-                void performAction(() => reviewWord(currentReviewWord.word, 'remembered'))
+                void performAction(() => reviewWord(currentReviewWord.id, 'remembered'))
               }>
-              <ThemedView
-                type="backgroundElement"
-                style={[styles.studyCard, { borderColor: theme.border }]}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {t('words.review.remaining')}: {snapshot.dueWords.length}
-                </ThemedText>
-                <ThemedText type="title" style={styles.word}>
-                  {currentReviewWord.word}
-                </ThemedText>
-
-                {translationVisible ? (
-                  <ThemedText type="subtitle" themeColor="textSecondary">
-                    {currentReviewWord.translation}
-                  </ThemedText>
-                ) : (
-                  <RevealTranslationButton
-                    label={t('words.review.showTranslation')}
-                    disabled={processing}
-                    onPress={() => setTranslationVisible(true)}
-                  />
-                )}
-              </ThemedView>
+              <StudyWordCard
+                word={currentReviewWord}
+                englishVariant={englishVariant}
+                detailsVisible={detailsVisible}
+                onShowDetails={() => setDetailsVisible(true)}
+                revealLabel={t('words.review.show', 'Show')}
+                disabled={processing}
+              />
             </SwipeStudyCard>
           ) : (
             <EmptyState
@@ -430,7 +410,64 @@ function SwipeStudyCard({
   );
 }
 
-function RevealTranslationButton({
+function StudyWordCard({
+  word,
+  englishVariant,
+  remainingLabel,
+  detailsVisible,
+  revealLabel,
+  disabled = false,
+  onShowDetails,
+}: {
+  word: DictionaryWord;
+  englishVariant: 'british' | 'american';
+  remainingLabel?: string;
+  detailsVisible: boolean;
+  revealLabel?: string;
+  disabled?: boolean;
+  onShowDetails?: () => void;
+}) {
+  const theme = useTheme();
+  const transcription = englishVariant === 'american' ? word.phon_n_am : word.phon_br;
+  const compact = !detailsVisible && Boolean(onShowDetails);
+
+  return (
+    <ThemedView type="backgroundElement" style={[styles.studyCard, compact && styles.compactStudyCard, { borderColor: theme.border }]}>
+      {remainingLabel && <ThemedText type="small" themeColor="textSecondary" style={styles.remainingText}>
+        {remainingLabel}
+      </ThemedText>}
+      <View style={[styles.wordHeader, compact && styles.compactWordHeader]}>
+        <ThemedText type="title" style={styles.word}>{word.word}</ThemedText>
+        <View
+          style={[styles.typeBadge, { backgroundColor: theme.backgroundSelected }]}
+        >
+          <ThemedText type="smallBold" themeColor="accent">{word.type}</ThemedText>
+        </View>
+      </View>
+
+      {detailsVisible ? (
+        <View style={styles.wordDetails}>
+          <ThemedText type="default" themeColor="textSecondary" style={styles.transcription}>
+            {transcription}
+          </ThemedText>
+          <View style={[styles.translationBlock, { borderColor: theme.border }]}>
+            <ThemedText type="subtitle">{word.translation}</ThemedText>
+          </View>
+          <View style={styles.definitionBlock}>
+            <ThemedText type="smallBold">{word.definition}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.exampleText}>
+              {word.example}
+            </ThemedText>
+          </View>
+        </View>
+      ) : onShowDetails && revealLabel ? (
+        <RevealDetailsButton label={revealLabel} disabled={disabled} onPress={onShowDetails} />
+      ) : null}
+    </ThemedView>
+  );
+}
+
+function RevealDetailsButton({
   label,
   disabled,
   onPress,
@@ -712,14 +749,59 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: Spacing.four,
     paddingBottom: 132,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.four,
     borderWidth: 1,
+  },
+  compactStudyCard: {
+    justifyContent: 'center',
+  },
+  remainingText: {
+    alignSelf: 'flex-end',
+  },
+  wordHeader: {
+    alignItems: 'center',
+    gap: Spacing.two,
+    marginTop: 'auto',
+    marginBottom: Spacing.four,
+  },
+  compactWordHeader: {
+    marginTop: 0,
+    marginBottom: Spacing.three,
   },
   word: {
     textAlign: 'center',
     textTransform: 'capitalize',
+  },
+  typeBadge: {
+    borderRadius: 999,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
+  },
+  wordDetails: {
+    gap: Spacing.three,
+    marginBottom: 'auto',
+  },
+  transcription: {
+    textAlign: 'center',
+    fontFamily: Fonts.sans,
+    fontSize: 20,
+    lineHeight: 36,
+    fontWeight: '400',
+    includeFontPadding: true,
+    paddingHorizontal: Spacing.one,
+    paddingVertical: Spacing.half,
+  },
+  translationBlock: {
+    alignItems: 'center',
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    borderWidth: 1,
+    borderRadius: Spacing.three,
+  },
+  definitionBlock: {
+    gap: Spacing.two,
+  },
+  exampleText: {
+    fontStyle: 'italic',
   },
   revealButton: {
     minHeight: 46,

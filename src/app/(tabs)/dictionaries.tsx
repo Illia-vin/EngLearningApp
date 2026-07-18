@@ -1,8 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
-  type ImageSourcePropType,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,41 +21,40 @@ import {
   type DictionarySelection,
 } from '@/db/dictionaryPreferences';
 import { getDictionaryWords, type DictionaryWord } from '@/db/words';
-import { getAllWordProgressMap, MASTERED_REPETITION_COUNT, type UserProgress } from '@/db/progress';
+import { getWordProgressMap, MASTERED_REPETITION_COUNT, type UserProgress } from '@/db/progress';
 import { getDictionary, type DictionarySummary } from '@/db/dictionaryRegistry';
 
-const DICTIONARY_ICON_SOURCES: Record<string, ImageSourcePropType> = {
-  basic_english: require('../../../assets/images/dictionary-icons/basic-english.png'),
-  home: require('../../../assets/images/dictionary-icons/home.png'),
-};
-
 export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: string }) {
+  const WORD_PAGE_SIZE = 30;
+  const dictionaryId = Number(dictionaryKey);
   const router = useRouter();
   const [dictionaries, setDictionaries] = useState<DictionarySelection[]>([]);
   const [selectedDictionary, setSelectedDictionary] = useState<DictionarySummary | null>(null);
   const [dictionaryWords, setDictionaryWords] = useState<DictionaryWord[]>([]);
-  const [progressByWord, setProgressByWord] = useState<Map<string, UserProgress>>(new Map());
+  const [progressByWord, setProgressByWord] = useState<Map<number, UserProgress>>(new Map());
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [updatingKey, setUpdatingKey] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreWords, setHasMoreWords] = useState(false);
+  const [updatingKey, setUpdatingKey] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
   const { locale, translationLanguage, t } = useLanguage();
+  const loadedWordCount = useRef(0);
+  const loadingMoreRef = useRef(false);
+  const dictionaryLoadGeneration = useRef(0);
 
   const loadDictionaries = useCallback(async () => {
     setError(null);
     try {
-      const result = await getDictionarySelections({
-        displayLanguage: locale,
-        translationLanguage,
-      });
+      const result = await getDictionarySelections(locale);
       setDictionaries(result);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
       setLoading(false);
     }
-  }, [locale, translationLanguage]);
+  }, [locale]);
 
   useFocusEffect(
     useCallback(() => {
@@ -70,22 +67,22 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
   );
 
   const toggleDictionary = async (dictionary: DictionarySelection, enabled: boolean) => {
-    setUpdatingKey(dictionary.dictionary_key);
+    setUpdatingKey(dictionary.id);
     setError(null);
     setDictionaries((current) =>
       current.map((item) =>
-        item.dictionary_key === dictionary.dictionary_key
+        item.id === dictionary.id
           ? { ...item, is_enabled: enabled }
           : item,
       ),
     );
 
     try {
-      await setDictionaryEnabled(dictionary.dictionary_key, enabled);
+      await setDictionaryEnabled(dictionary.id, enabled);
     } catch (caught) {
       setDictionaries((current) =>
         current.map((item) =>
-          item.dictionary_key === dictionary.dictionary_key
+          item.id === dictionary.id
             ? { ...item, is_enabled: !enabled }
             : item,
         ),
@@ -99,9 +96,38 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
   const openDictionary = (dictionary: DictionarySelection) => {
     router.push({
       pathname: '/dictionary/[dictionaryKey]',
-      params: { dictionaryKey: dictionary.dictionary_key },
+      params: { dictionaryKey: String(dictionary.id) },
     });
   };
+
+  const loadNextWordPage = useCallback(async () => {
+    if (!dictionaryKey || loadingMoreRef.current || !hasMoreWords) return;
+
+    const generation = dictionaryLoadGeneration.current;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    try {
+      const words = await getDictionaryWords(dictionaryId, translationLanguage, locale, {
+        limit: WORD_PAGE_SIZE,
+        offset: loadedWordCount.current,
+      });
+      const progress = await getWordProgressMap(words.map((word) => word.id));
+      if (generation !== dictionaryLoadGeneration.current) return;
+      loadedWordCount.current += words.length;
+      setDictionaryWords((current) => [...current, ...words]);
+      setProgressByWord((current) => new Map([...current, ...progress]));
+      setHasMoreWords(words.length === WORD_PAGE_SIZE);
+    } catch (caught) {
+      if (generation === dictionaryLoadGeneration.current) {
+        setError(caught instanceof Error ? caught.message : String(caught));
+      }
+    } finally {
+      if (generation === dictionaryLoadGeneration.current) {
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+      }
+    }
+  }, [dictionaryId, dictionaryKey, hasMoreWords, locale, translationLanguage]);
 
   useEffect(() => {
     if (!dictionaryKey) {
@@ -109,34 +135,27 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
     }
 
     let active = true;
+    dictionaryLoadGeneration.current += 1;
+    loadedWordCount.current = 0;
+    loadingMoreRef.current = false;
     setDictionaryWords([]);
+    setProgressByWord(new Map());
+    setHasMoreWords(false);
     setDetailLoading(true);
     setError(null);
     Promise.all([
-      getDictionary(dictionaryKey, locale),
-      getDictionaryWords(dictionaryKey, translationLanguage, { limit: 15 }),
-      getAllWordProgressMap(),
+      getDictionary(dictionaryId, locale),
+      getDictionaryWords(dictionaryId, translationLanguage, locale, { limit: WORD_PAGE_SIZE }),
     ])
-      .then(async ([dictionary, words, allProgress]) => {
+      .then(async ([dictionary, words]) => {
+        const progress = await getWordProgressMap(words.map((word) => word.id));
         if (active) {
+          loadedWordCount.current = words.length;
           setSelectedDictionary(dictionary);
           setDictionaryWords(words);
-          setProgressByWord(
-            new Map(
-              words
-                .map((word) => [word.word.toLowerCase(), allProgress.get(word.word.toLowerCase())] as const)
-                .filter((entry): entry is [string, UserProgress] => Boolean(entry[1])),
-            ),
-          );
+          setProgressByWord(progress);
+          setHasMoreWords(words.length === WORD_PAGE_SIZE);
           setDetailLoading(false);
-        }
-
-        const remainingWords = await getDictionaryWords(dictionaryKey, translationLanguage, {
-          offset: words.length,
-        });
-        if (active) {
-          setDictionaryWords((current) => [...current, ...remainingWords]);
-          setProgressByWord((current) => new Map([...current, ...allProgress]));
         }
       })
       .catch((caught) => {
@@ -151,22 +170,34 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
     return () => {
       active = false;
     };
-  }, [dictionaryKey, locale, translationLanguage]);
+  }, [dictionaryId, dictionaryKey, locale, translationLanguage]);
 
   if (dictionaryKey) {
     return (
-      <ScrollView
-        style={{ backgroundColor: theme.background }}
-        contentContainerStyle={styles.scrollContent}>
-        <ThemedView style={styles.content}>
-          {selectedDictionary && (
-            <DetailHeader
-              title={selectedDictionary.name}
-              subtitle={`${selectedDictionary.word_count} ${t('dictionaries.words')}`}
-              onBack={() => router.back()}
-            />
-          )}
+      <ThemedView style={styles.detailScreen}>
+        <ThemedView style={styles.fixedHeader}>
+          <View style={styles.fixedHeaderContent}>
+            {selectedDictionary && (
+              <DetailHeader
+                title={selectedDictionary.name}
+                subtitle={`${selectedDictionary.word_count} ${t('dictionaries.words')}`}
+                onBack={() => router.back()}
+              />
+            )}
+          </View>
+        </ThemedView>
 
+        <ScrollView
+          style={{ backgroundColor: theme.background }}
+          scrollEventThrottle={16}
+          onScroll={({ nativeEvent }) => {
+            const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+            if (contentOffset.y + layoutMeasurement.height * 2 >= contentSize.height) {
+              void loadNextWordPage();
+            }
+          }}
+          contentContainerStyle={[styles.scrollContent, styles.detailScrollContent]}>
+          <ThemedView style={styles.content}>
           {detailLoading && <ActivityIndicator color={theme.textSecondary} />}
           {error && <ThemedText themeColor="textSecondary">{error}</ThemedText>}
 
@@ -174,20 +205,26 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
             <ThemedView type="backgroundElement" style={[styles.wordList, { borderColor: theme.border }]}>
               {dictionaryWords.map((item, index) => (
                 <WordListItem
-                  key={item.word}
+                  key={item.id}
                   item={item}
-                  progress={progressByWord.get(item.word.toLowerCase())}
+                  progress={progressByWord.get(item.id)}
                   t={t}
                   isLast={index === dictionaryWords.length - 1}
                   onPress={() =>
-                    router.push({ pathname: '/word/[word]', params: { word: item.word } } as never)
+                    router.push({ pathname: '/word/[word]', params: { word: String(item.id) } } as never)
                   }
                 />
               ))}
             </ThemedView>
           )}
-        </ThemedView>
-      </ScrollView>
+          {selectedDictionary && !detailLoading && !error && loadingMore && (
+            <View style={styles.loadingMore}>
+              <ActivityIndicator color={theme.textSecondary} />
+            </View>
+          )}
+          </ThemedView>
+        </ScrollView>
+      </ThemedView>
     );
   }
 
@@ -208,9 +245,9 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
 
         {!loading && dictionaries.map((dictionary) => (
           <DictionaryCard
-            key={dictionary.dictionary_key}
+            key={dictionary.id}
             dictionary={dictionary}
-            updating={updatingKey === dictionary.dictionary_key}
+            updating={updatingKey === dictionary.id}
             wordLabel={t('dictionaries.words')}
             progressLabel={t('dictionaries.progress')}
             toggleLabel={t('dictionaries.toggle', dictionary.name)}
@@ -289,8 +326,6 @@ function DictionaryCard({
   onToggle: (enabled: boolean) => void;
 }) {
   const theme = useTheme();
-  const iconSource = DICTIONARY_ICON_SOURCES[dictionary.dictionary_key];
-
   return (
     <Pressable
       accessibilityRole="button"
@@ -305,11 +340,7 @@ function DictionaryCard({
       ]}>
       <View style={styles.dictionaryHeader}>
         <View style={[styles.dictionaryIcon, { backgroundColor: theme.background }]}>
-          {iconSource ? (
-            <Image source={iconSource} resizeMode="contain" style={styles.dictionaryImage} />
-          ) : (
-            <MaterialCommunityIcons name="bookmark-outline" size={26} color={theme.accent} />
-          )}
+          <MaterialCommunityIcons name="bookmark-outline" size={26} color={theme.accent} />
         </View>
         <View style={styles.dictionaryInfo}>
           <ThemedText type="smallBold">{dictionary.name}</ThemedText>
@@ -357,11 +388,27 @@ function DictionaryCard({
 }
 
 const styles = StyleSheet.create({
+  detailScreen: {
+    flex: 1,
+  },
+  fixedHeader: {
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.four,
+    paddingBottom: Spacing.three,
+  },
+  fixedHeaderContent: {
+    maxWidth: MaxContentWidth,
+    width: '100%',
+    alignSelf: 'center',
+  },
   scrollContent: {
     flexDirection: 'row',
     justifyContent: 'center',
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.four,
+  },
+  detailScrollContent: {
+    paddingTop: 0,
   },
   content: {
     maxWidth: MaxContentWidth,
@@ -425,6 +472,11 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     borderWidth: 1,
     overflow: 'hidden',
+  },
+  loadingMore: {
+    minHeight: 72,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   wordRow: {
     paddingVertical: Spacing.three,
