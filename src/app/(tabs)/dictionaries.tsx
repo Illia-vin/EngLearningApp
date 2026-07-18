@@ -76,6 +76,23 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
     }, [dictionaryKey, loadDictionaries]),
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      if (!dictionaryKey || dictionaryWords.length === 0) return;
+
+      let active = true;
+      void getWordProgressMap(dictionaryWords.map((word) => word.id)).then((progress) => {
+        if (active) setProgressByWord(progress);
+      }).catch((caught) => {
+        if (active) setError(caught instanceof Error ? caught.message : String(caught));
+      });
+
+      return () => {
+        active = false;
+      };
+    }, [dictionaryKey, dictionaryWords]),
+  );
+
   const toggleDictionary = async (dictionary: DictionarySelection, enabled: boolean) => {
     setUpdatingKey(dictionary.id);
     setError(null);
