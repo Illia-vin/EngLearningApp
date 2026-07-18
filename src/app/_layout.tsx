@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { LanguageProvider, useLanguage } from '@/i18n';
 import { initDatabases } from '@/db/database';
+import { ensureDictionaryProgressCounts } from '@/db/progress';
 
 const EXIT_CONFIRMATION_WINDOW_MS = 2000;
 
@@ -54,8 +55,11 @@ function AndroidDoubleBackExit() {
 function DatabaseWarmup() {
   React.useEffect(() => {
     const task = InteractionManager.runAfterInteractions(() => {
-      void initDatabases().catch(() => {
-        // The study screen will retry and surface any real database error.
+      void (async () => {
+        await initDatabases();
+        await ensureDictionaryProgressCounts();
+      })().catch(() => {
+        // The screen that needs the data will retry and surface a real error.
       });
     });
     return () => task.cancel();

@@ -32,6 +32,14 @@ export async function contentWordExists(wordId: number): Promise<boolean> {
   return Boolean(await database.getFirstAsync<{ id: number }>('SELECT id FROM words WHERE id = ? LIMIT 1', [wordId]));
 }
 
+export async function getDictionaryIdsForWord(wordId: number): Promise<number[]> {
+  const database = await getContentDatabase();
+  const rows = await database.getAllAsync<{ dictionary_id: number }>(
+    'SELECT dictionary_id FROM dictionary_words WHERE word_id = ?', [wordId],
+  );
+  return rows.map((row) => row.dictionary_id);
+}
+
 export async function getWordReferencesForDictionaries(dictionaryIds: number[]): Promise<WordReference[]> {
   if (dictionaryIds.length === 0) return [];
   const database = await getContentDatabase();

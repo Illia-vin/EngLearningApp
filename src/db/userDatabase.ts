@@ -59,6 +59,10 @@ async function initializeUserDatabase(database: SQLite.SQLiteDatabase) {
       dictionary_id INTEGER PRIMARY KEY, is_enabled INTEGER NOT NULL CHECK (is_enabled IN (0, 1)),
       updated_at INTEGER NOT NULL DEFAULT (unixepoch())
     ) WITHOUT ROWID;`);
+  await database.execAsync(`CREATE TABLE IF NOT EXISTS dictionary_progress_counts (
+    dictionary_id INTEGER PRIMARY KEY,
+    studied_word_count INTEGER NOT NULL DEFAULT 0 CHECK (studied_word_count >= 0)
+  ) WITHOUT ROWID;`);
   await ensureUserProgressTable(database);
   await database.execAsync(`CREATE INDEX IF NOT EXISTS user_progress_next_review_at ON user_progress(next_review_at);
     CREATE INDEX IF NOT EXISTS user_progress_status_next_review ON user_progress(status, next_review_at); PRAGMA user_version = 1;`);
