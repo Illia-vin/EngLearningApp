@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import { ThemedText } from '@/components/themed-text';
@@ -49,8 +50,17 @@ export default function SettingsScreen() {
     flag: variant === 'american' ? '🇺🇸' : languageFlags.en,
   }));
 
+  useFocusEffect(
+    useCallback(() => () => setOpenDropdown(null), []),
+  );
+
   return (
-    <ScrollView style={{ backgroundColor: theme.background }} contentContainerStyle={styles.scrollContent}>
+    <ScrollView
+      style={{ backgroundColor: theme.background }}
+      contentContainerStyle={styles.scrollContent}
+      onTouchStart={() => {
+        if (openDropdown) setOpenDropdown(null);
+      }}>
       <ThemedView style={styles.content}>
         <View style={styles.header}>
           <ThemedText type="title">{t('settings.title')}</ThemedText>
@@ -93,7 +103,11 @@ function SettingsDropdown<T extends string>({ label, value, options, open, onTog
   return (
     <View style={[styles.dropdownSection, open && styles.dropdownSectionOpen]}>
       <ThemedText type="smallBold">{label}</ThemedText>
-      <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={onToggle}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        onTouchStart={(event) => event.stopPropagation()}
+        onPress={onToggle}
         style={[styles.dropdownTrigger, { backgroundColor: theme.background, borderColor: open ? theme.primary : theme.border }]}>
         <OptionLabel flag={selectedOption?.flag} label={selectedOption?.label ?? value} />
         <MaterialCommunityIcons name={open ? 'chevron-up' : 'chevron-down'} size={24} color={open ? theme.accent : theme.textSecondary} />
@@ -101,7 +115,7 @@ function SettingsDropdown<T extends string>({ label, value, options, open, onTog
       {open && <View style={[styles.dropdownMenu, { backgroundColor: theme.background, borderColor: theme.border }]}>
         {options.map((option) => {
           const selected = option.value === value;
-          return <Pressable key={option.value} accessibilityRole="button" accessibilityState={{ selected }} onPress={() => onSelect(option.value)}
+          return <Pressable key={option.value} accessibilityRole="button" accessibilityState={{ selected }} onTouchStart={(event) => event.stopPropagation()} onPress={() => onSelect(option.value)}
             style={[styles.dropdownOption, selected && { backgroundColor: theme.backgroundSelected }]}>
             <OptionLabel flag={option.flag} label={option.label} themeColor={selected ? 'accent' : 'textSecondary'} />
             {selected && <MaterialCommunityIcons name="check" size={21} color={theme.accent} />}
