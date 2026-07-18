@@ -91,7 +91,7 @@ function SettingsDropdown<T extends string>({ label, value, options, open, onTog
   const theme = useTheme();
   const selectedOption = options.find((option) => option.value === value);
   return (
-    <View style={styles.dropdownSection}>
+    <View style={[styles.dropdownSection, open && styles.dropdownSectionOpen]}>
       <ThemedText type="smallBold">{label}</ThemedText>
       <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={onToggle}
         style={[styles.dropdownTrigger, { backgroundColor: theme.background, borderColor: open ? theme.primary : theme.border }]}>
@@ -123,9 +123,10 @@ const styles = StyleSheet.create({
   scrollContent: { flexDirection: 'row', justifyContent: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.four },
   content: { maxWidth: MaxContentWidth, flexGrow: 1, gap: Spacing.four },
   header: { gap: Spacing.two },
-  dropdownSection: { gap: Spacing.two },
+  dropdownSection: { gap: Spacing.two, position: 'relative', zIndex: 1 },
+  dropdownSectionOpen: { zIndex: 10 },
   dropdownTrigger: { minHeight: 52, borderWidth: 1, borderRadius: 14, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  dropdownMenu: { borderRadius: 14, overflow: 'hidden', borderWidth: 1 },
+  dropdownMenu: { position: 'absolute', top: '100%', right: 0, left: 0, marginTop: Spacing.two, borderRadius: 14, overflow: 'hidden', borderWidth: 1, elevation: 8 },
   dropdownOption: { minHeight: 48, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   optionLabel: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   flag: { fontSize: 19, lineHeight: 24 },
