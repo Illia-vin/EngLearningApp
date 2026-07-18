@@ -79,6 +79,7 @@ export default function TabLayout() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="study/[mode]" />
               <Stack.Screen name="dictionary/[dictionaryKey]" />
+              <Stack.Screen name="word/[word]" />
             </Stack>
           </SafeAreaView>
         </LanguageProvider>

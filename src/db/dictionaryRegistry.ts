@@ -11,15 +11,20 @@ export interface DictionarySummary {
 export async function getDictionaries({
   displayLanguage = 'en',
   translationLanguage,
+  dictionaryKey,
 }: {
   displayLanguage?: string;
   translationLanguage?: string;
+  dictionaryKey?: string;
 } = {}): Promise<DictionarySummary[]> {
   const database = await getContentDatabase();
   const languageFilter = translationLanguage
     ? `INNER JOIN dictionary_languages AS supported_language
          ON supported_language.dictionary_key = dictionaries.dictionary_key
         AND supported_language.language = ?`
+    : '';
+  const dictionaryFilter = dictionaryKey
+    ? 'WHERE dictionaries.dictionary_key = ?'
     : '';
 
   return database.getAllAsync<DictionarySummary>(
@@ -41,10 +46,23 @@ export async function getDictionaries({
        ON dictionary_languages.dictionary_key = dictionaries.dictionary_key
      LEFT JOIN dictionary_items
        ON dictionary_items.dictionary_key = dictionaries.dictionary_key
+     ${dictionaryFilter}
      GROUP BY dictionaries.dictionary_key
      ORDER BY dictionaries.is_default DESC, name ASC`,
-    translationLanguage ? [translationLanguage, displayLanguage] : [displayLanguage],
+    [
+      ...(translationLanguage ? [translationLanguage] : []),
+      displayLanguage,
+      ...(dictionaryKey ? [dictionaryKey] : []),
+    ],
   );
+}
+
+export async function getDictionary(
+  dictionaryKey: string,
+  displayLanguage = 'en',
+): Promise<DictionarySummary | null> {
+  const dictionaries = await getDictionaries({ displayLanguage, dictionaryKey });
+  return dictionaries[0] ?? null;
 }
 
 export async function contentDictionaryExists(dictionaryKey: string): Promise<boolean> {

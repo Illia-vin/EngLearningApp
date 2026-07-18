@@ -43,6 +43,16 @@
     }
   },
   "dictionaries": {
+    "alreadyKnown": "Відоме",
+    "learning": "Вивчається",
+    "notStarted": "Не вивчене",
+    "mastered": "Вивчене",
+    "repetitionsLeftPrefix": "Ще",
+    "repetitionsRemaining": "повторів",
+    "wordDetails": "Інформація про слово",
+    "learningProgress": "Прогрес вивчення",
+    "resetProgress": "Скинути прогрес",
+    "markKnown": "Позначити як відоме",
     "progress": "Прогрес вивчення",
     "empty": "Немає словників для обраної мови перекладу.",
     "description": "Увімкніть словники для навчання або відкрийте їх, щоб переглянути слова.",

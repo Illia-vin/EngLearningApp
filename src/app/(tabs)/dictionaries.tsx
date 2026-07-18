@@ -13,6 +13,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { DetailHeader } from '@/components/detail-header';
 import { useTheme } from '@/hooks/use-theme';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/i18n';
@@ -22,6 +23,8 @@ import {
   type DictionarySelection,
 } from '@/db/dictionaryPreferences';
 import { getDictionaryWords, type DictionaryWord } from '@/db/words';
+import { getAllWordProgressMap, MASTERED_REPETITION_COUNT, type UserProgress } from '@/db/progress';
+import { getDictionary, type DictionarySummary } from '@/db/dictionaryRegistry';
 
 const DICTIONARY_ICON_SOURCES: Record<string, ImageSourcePropType> = {
   basic_english: require('../../../assets/images/dictionary-icons/basic-english.png'),
@@ -31,7 +34,9 @@ const DICTIONARY_ICON_SOURCES: Record<string, ImageSourcePropType> = {
 export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: string }) {
   const router = useRouter();
   const [dictionaries, setDictionaries] = useState<DictionarySelection[]>([]);
+  const [selectedDictionary, setSelectedDictionary] = useState<DictionarySummary | null>(null);
   const [dictionaryWords, setDictionaryWords] = useState<DictionaryWord[]>([]);
+  const [progressByWord, setProgressByWord] = useState<Map<string, UserProgress>>(new Map());
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
@@ -56,8 +61,12 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
 
   useFocusEffect(
     useCallback(() => {
+      if (dictionaryKey) {
+        return;
+      }
+
       void loadDictionaries();
-    }, [loadDictionaries]),
+    }, [dictionaryKey, loadDictionaries]),
   );
 
   const toggleDictionary = async (dictionary: DictionarySelection, enabled: boolean) => {
@@ -94,12 +103,8 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
     });
   };
 
-  const selectedDictionary = dictionaryKey
-    ? dictionaries.find((dictionary) => dictionary.dictionary_key === dictionaryKey) ?? null
-    : null;
-
   useEffect(() => {
-    if (!selectedDictionary) {
+    if (!dictionaryKey) {
       return;
     }
 
@@ -107,9 +112,32 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
     setDictionaryWords([]);
     setDetailLoading(true);
     setError(null);
-    getDictionaryWords(selectedDictionary.dictionary_key, translationLanguage)
-      .then((words) => {
-        if (active) setDictionaryWords(words);
+    Promise.all([
+      getDictionary(dictionaryKey, locale),
+      getDictionaryWords(dictionaryKey, translationLanguage, { limit: 15 }),
+      getAllWordProgressMap(),
+    ])
+      .then(async ([dictionary, words, allProgress]) => {
+        if (active) {
+          setSelectedDictionary(dictionary);
+          setDictionaryWords(words);
+          setProgressByWord(
+            new Map(
+              words
+                .map((word) => [word.word.toLowerCase(), allProgress.get(word.word.toLowerCase())] as const)
+                .filter((entry): entry is [string, UserProgress] => Boolean(entry[1])),
+            ),
+          );
+          setDetailLoading(false);
+        }
+
+        const remainingWords = await getDictionaryWords(dictionaryKey, translationLanguage, {
+          offset: words.length,
+        });
+        if (active) {
+          setDictionaryWords((current) => [...current, ...remainingWords]);
+          setProgressByWord((current) => new Map([...current, ...allProgress]));
+        }
       })
       .catch((caught) => {
         if (active) {
@@ -123,53 +151,38 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
     return () => {
       active = false;
     };
-  }, [selectedDictionary?.dictionary_key, translationLanguage]);
+  }, [dictionaryKey, locale, translationLanguage]);
 
-  if (selectedDictionary) {
+  if (dictionaryKey) {
     return (
       <ScrollView
         style={{ backgroundColor: theme.background }}
         contentContainerStyle={styles.scrollContent}>
         <ThemedView style={styles.content}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.back()}
-            style={styles.backButton}>
-            <MaterialCommunityIcons name="arrow-left" size={22} color={theme.accent} />
-            <ThemedText type="smallBold">{t('common.back')}</ThemedText>
-          </Pressable>
-
-          <View style={styles.screenHeader}>
-            <ThemedText type="subtitle">{selectedDictionary.name}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              {selectedDictionary.word_count} {t('dictionaries.words')}
-            </ThemedText>
-          </View>
+          {selectedDictionary && (
+            <DetailHeader
+              title={selectedDictionary.name}
+              subtitle={`${selectedDictionary.word_count} ${t('dictionaries.words')}`}
+              onBack={() => router.back()}
+            />
+          )}
 
           {detailLoading && <ActivityIndicator color={theme.textSecondary} />}
           {error && <ThemedText themeColor="textSecondary">{error}</ThemedText>}
 
-          {!detailLoading && !error && (
-            <ThemedView
-              type="backgroundElement"
-              style={[styles.wordList, { borderColor: theme.border }]}>
+          {selectedDictionary && !detailLoading && !error && (
+            <ThemedView type="backgroundElement" style={[styles.wordList, { borderColor: theme.border }]}>
               {dictionaryWords.map((item, index) => (
-                <View
+                <WordListItem
                   key={item.word}
-                  style={[
-                    styles.wordRow,
-                    index < dictionaryWords.length - 1 && {
-                      borderBottomColor: theme.border,
-                      borderBottomWidth: 1,
-                    },
-                  ]}>
-                  <ThemedText type="smallBold" style={styles.capitalize}>
-                    {item.word}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {item.translation}
-                  </ThemedText>
-                </View>
+                  item={item}
+                  progress={progressByWord.get(item.word.toLowerCase())}
+                  t={t}
+                  isLast={index === dictionaryWords.length - 1}
+                  onPress={() =>
+                    router.push({ pathname: '/word/[word]', params: { word: item.word } } as never)
+                  }
+                />
               ))}
             </ThemedView>
           )}
@@ -211,6 +224,50 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
         )}
       </ThemedView>
     </ScrollView>
+  );
+}
+
+function WordListItem({ item, progress, t, isLast, onPress }: {
+  item: DictionaryWord;
+  progress?: UserProgress;
+  t: (key: string) => string;
+  isLast: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  let indicatorColor = '#E5E7EB';
+  let statusLabel = t('dictionaries.notStarted');
+
+  if (progress?.status === 'known') {
+    indicatorColor = '#4B5563';
+    statusLabel = t('dictionaries.alreadyKnown');
+  } else if (progress?.status === 'mastered') {
+    indicatorColor = '#28764A';
+    statusLabel = t('dictionaries.mastered');
+  } else if (progress) {
+    indicatorColor = theme.primary;
+    statusLabel = `${t('dictionaries.repetitionsLeftPrefix')} ${Math.max(0, MASTERED_REPETITION_COUNT - progress.repetitions)} ${t('dictionaries.repetitionsRemaining')}`;
+  }
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={[
+        styles.wordRow,
+        !isLast && { borderBottomColor: theme.border, borderBottomWidth: 1 },
+        {
+          backgroundColor: theme.backgroundElement,
+        },
+      ]}>
+      <View pointerEvents="none" style={[styles.statusIndicator, { backgroundColor: indicatorColor }]} />
+      <View style={styles.wordInfo}>
+        <ThemedText type="small" themeColor="textSecondary">{statusLabel}</ThemedText>
+        <ThemedText type="default" style={styles.capitalize}>{item.word}</ThemedText>
+        <ThemedText type="default" themeColor="textSecondary">{item.translation}</ThemedText>
+      </View>
+      <MaterialCommunityIcons name="chevron-right" size={24} color={theme.textSecondary} />
+    </Pressable>
   );
 }
 
@@ -364,21 +421,31 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 4,
   },
-  backButton: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    minHeight: 44,
-  },
   wordList: {
     borderRadius: Spacing.three,
     borderWidth: 1,
     overflow: 'hidden',
   },
   wordRow: {
-    padding: Spacing.three,
+    paddingVertical: Spacing.three,
+    paddingRight: Spacing.three,
+    paddingLeft: Spacing.four + Spacing.two,
+    minHeight: 112,
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  wordInfo: {
+    flex: 1,
     gap: Spacing.one,
+  },
+  statusIndicator: {
+    position: 'absolute',
+    top: Spacing.three,
+    bottom: Spacing.three,
+    left: Spacing.two,
+    width: 5,
   },
   capitalize: {
     textTransform: 'capitalize',

@@ -7,6 +7,7 @@ import {
 } from './words';
 import {
   getWordProgress,
+  MASTERED_REPETITION_COUNT,
   saveWordProgress,
   type UserProgress,
 } from './progress';
@@ -129,6 +130,17 @@ export async function reviewWord(
   }
 
   const repetitions = progress.repetitions + 1;
+  if (repetitions >= MASTERED_REPETITION_COUNT) {
+    await saveWordProgress({
+      ...progress,
+      status: 'mastered',
+      repetitions,
+      next_review_at: null,
+      updated_at: Date.now(),
+    });
+    return;
+  }
+
   const baseIntervalDays =
     repetitions === 1
       ? 1

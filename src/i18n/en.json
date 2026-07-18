@@ -43,6 +43,16 @@
     }
   },
   "dictionaries": {
+    "alreadyKnown": "Known",
+    "learning": "Learning",
+    "notStarted": "Not learned",
+    "mastered": "Learned",
+    "repetitionsLeftPrefix": "",
+    "repetitionsRemaining": "repetitions left",
+    "wordDetails": "Word details",
+    "learningProgress": "Learning progress",
+    "resetProgress": "Reset progress",
+    "markKnown": "Mark as known",
     "progress": "Learning progress",
     "empty": "No dictionaries support the selected translation language.",
     "description": "Enable dictionaries for learning or open one to browse its words.",

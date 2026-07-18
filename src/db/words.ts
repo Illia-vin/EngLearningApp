@@ -7,6 +7,11 @@ export interface DictionaryWord {
 
 export const DEFAULT_TRANSLATION_LANGUAGE = 'uk';
 
+export interface DictionaryWordsPage {
+  limit?: number;
+  offset?: number;
+}
+
 export function normalizeEnglishWord(word: string) {
   return word.trim().toLowerCase();
 }
@@ -38,6 +43,7 @@ async function assertTranslationLanguage(language: string) {
 export async function getWordsForDictionaries(
   dictionaryKeys: string[],
   language = DEFAULT_TRANSLATION_LANGUAGE,
+  page?: DictionaryWordsPage,
 ): Promise<DictionaryWord[]> {
   if (dictionaryKeys.length === 0) {
     return [];
@@ -46,6 +52,13 @@ export async function getWordsForDictionaries(
   await assertTranslationLanguage(language);
   const database = await getContentDatabase();
   const placeholders = dictionaryKeys.map(() => '?').join(', ');
+  const limit = page?.limit;
+  const offset = page?.offset ?? 0;
+  const pagination = limit !== undefined
+    ? 'LIMIT ? OFFSET ?'
+    : offset > 0
+      ? 'LIMIT -1 OFFSET ?'
+      : '';
 
   return database.getAllAsync<DictionaryWord>(
     `WITH selected_words AS (
@@ -65,16 +78,42 @@ export async function getWordsForDictionaries(
      INNER JOIN ordered_translations
        ON ordered_translations.word = selected_words.word
      GROUP BY selected_words.word
-     ORDER BY selected_words.word COLLATE NOCASE ASC`,
-    [...dictionaryKeys, language],
+     ORDER BY selected_words.word COLLATE NOCASE ASC
+     ${pagination}`,
+    [
+      ...dictionaryKeys,
+      language,
+      ...(limit !== undefined ? [limit, offset] : offset > 0 ? [offset] : []),
+    ],
   );
 }
 
 export async function getDictionaryWords(
   dictionaryKey: string,
   language = DEFAULT_TRANSLATION_LANGUAGE,
+  page?: DictionaryWordsPage,
 ): Promise<DictionaryWord[]> {
-  return getWordsForDictionaries([dictionaryKey], language);
+  return getWordsForDictionaries([dictionaryKey], language, page);
+}
+
+export async function getWordWithTranslation(
+  word: string,
+  language = DEFAULT_TRANSLATION_LANGUAGE,
+): Promise<DictionaryWord | null> {
+  await assertTranslationLanguage(language);
+  const database = await getContentDatabase();
+  const normalizedWord = normalizeEnglishWord(word);
+  const translations = await database.getAllAsync<{ translation: string }>(
+    `SELECT translation
+     FROM translations
+     WHERE word = ? AND language = ?
+     ORDER BY position`,
+    [normalizedWord, language],
+  );
+
+  return translations.length > 0
+    ? { word: normalizedWord, translation: translations.map((item) => item.translation).join(', ') }
+    : null;
 }
 
 export async function getDefaultDictionaryWords(

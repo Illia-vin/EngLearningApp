@@ -43,6 +43,16 @@
     }
   },
   "dictionaries": {
+    "alreadyKnown": "Conocida",
+    "learning": "En aprendizaje",
+    "notStarted": "No aprendida",
+    "mastered": "Aprendida",
+    "repetitionsLeftPrefix": "Quedan",
+    "repetitionsRemaining": "repeticiones",
+    "wordDetails": "Información de la palabra",
+    "learningProgress": "Progreso de aprendizaje",
+    "resetProgress": "Restablecer progreso",
+    "markKnown": "Marcar como conocida",
     "progress": "Progreso de aprendizaje",
     "empty": "No hay diccionarios compatibles con el idioma de traducción seleccionado.",
     "description": "Activa diccionarios para aprender o abre uno para ver sus palabras.",

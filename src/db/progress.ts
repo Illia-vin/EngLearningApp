@@ -12,6 +12,30 @@ export interface UserProgress {
   updated_at: number;
 }
 
+export const MASTERED_REPETITION_COUNT = 5;
+
+export async function getAllWordProgressMap(): Promise<Map<string, UserProgress>> {
+  const database = await getUserDatabase();
+  const entries = await database.getAllAsync<UserProgress>('SELECT * FROM user_progress');
+  return new Map(entries.map((entry) => [entry.word.toLowerCase(), entry]));
+}
+
+export async function getWordProgressMap(words: string[]): Promise<Map<string, UserProgress>> {
+  if (words.length === 0) {
+    return new Map();
+  }
+
+  const database = await getUserDatabase();
+  const normalizedWords = [...new Set(words.map(normalizeEnglishWord))];
+  const placeholders = normalizedWords.map(() => '?').join(', ');
+  const entries = await database.getAllAsync<UserProgress>(
+    `SELECT * FROM user_progress WHERE word IN (${placeholders})`,
+    normalizedWords,
+  );
+
+  return new Map(entries.map((entry) => [entry.word.toLowerCase(), entry]));
+}
+
 export async function getWordProgress(word: string): Promise<UserProgress | null> {
   const database = await getUserDatabase();
   return database.getFirstAsync<UserProgress>(
@@ -51,4 +75,9 @@ export async function saveWordProgress(progress: UserProgress) {
       progress.updated_at,
     ],
   );
+}
+
+export async function resetWordProgress(word: string): Promise<void> {
+  const database = await getUserDatabase();
+  await database.runAsync('DELETE FROM user_progress WHERE word = ?', [normalizeEnglishWord(word)]);
 }
