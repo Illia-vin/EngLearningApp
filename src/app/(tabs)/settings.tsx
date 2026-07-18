@@ -110,10 +110,10 @@ function SettingsDropdown<T extends string>({
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         onPress={onToggle}
-        style={({ pressed }) => [
+        style={[
           styles.dropdownTrigger,
           {
-            backgroundColor: pressed ? theme.backgroundSelected : theme.background,
+            backgroundColor: theme.background,
             borderColor: open ? theme.primary : theme.border,
           },
         ]}>
@@ -139,9 +139,9 @@ function SettingsDropdown<T extends string>({
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
                 onPress={() => onSelect(option.value)}
-                style={({ pressed }) => [
+                style={[
                   styles.dropdownOption,
-                  (selected || pressed) && { backgroundColor: theme.backgroundSelected },
+                  selected && { backgroundColor: theme.backgroundSelected },
                 ]}>
                 <ThemedText themeColor={selected ? 'accent' : 'textSecondary'}>
                   {option.label}

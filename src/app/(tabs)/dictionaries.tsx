@@ -296,10 +296,10 @@ function DictionaryCard({
       accessibilityRole="button"
       accessibilityLabel={dictionary.name}
       onPress={onOpen}
-      style={({ pressed }) => [
+      style={[
         styles.dictionaryCard,
         {
-          backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
+          backgroundColor: theme.backgroundElement,
           borderColor: theme.border,
         },
       ]}>

@@ -29,6 +29,7 @@ import {
 } from '@/db/study';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { BackButton } from '@/components/back-button';
 import { useTheme } from '@/hooks/use-theme';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/i18n';
@@ -105,13 +106,7 @@ export default function WordsScreen({ mode }: { mode?: StudyMode }) {
       <ThemedView style={[styles.container, activeMode && styles.activeContainer]}>
         <View style={styles.titleRow}>
           {activeMode && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('common.back')}
-              onPress={() => router.back()}
-              style={styles.iconButton}>
-              <MaterialCommunityIcons name="arrow-left" size={26} color={theme.accent} />
-            </Pressable>
+            <BackButton accessibilityLabel={t('common.back')} onPress={() => router.back()} />
           )}
           <ThemedText type={activeMode ? 'subtitle' : 'title'} style={styles.flexText}>
             {activeMode === 'review'
@@ -452,10 +447,10 @@ function RevealTranslationButton({
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.revealButton,
         {
-          backgroundColor: pressed ? theme.border : theme.backgroundSelected,
+          backgroundColor: theme.backgroundSelected,
           borderColor: theme.border,
         },
         disabled && styles.disabled,
@@ -490,10 +485,9 @@ function SwipeActionButton({
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.swipeActionButton,
         disabled && styles.disabled,
-        pressed && styles.swipeActionPressed,
       ]}>
       <View
         style={[
@@ -542,10 +536,10 @@ function ModeCard({
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.modeCard,
         {
-          backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
+          backgroundColor: theme.backgroundElement,
           borderColor: theme.border,
         },
         disabled && styles.disabled,
@@ -607,12 +601,6 @@ const styles = StyleSheet.create({
   },
   flexText: {
     flex: 1,
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   modeCard: {
     padding: Spacing.three,

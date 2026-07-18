@@ -57,17 +57,22 @@ export function LanguageProvider({ children }: PropsWithChildren) {
   const [locale, setLocaleState] = useState<LanguageCode>('en');
   const [translationLanguage, setTranslationLanguageState] =
     useState<TranslationLanguageCode>('uk');
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     async function loadStoredLanguages() {
-      const [storedLanguage, storedTranslationLanguage] = await Promise.all([
-        getCurrentLanguage(),
-        getCurrentTranslationLanguage(),
-      ]);
-      setLocaleState(storedLanguage as LanguageCode);
-      setTranslationLanguageState(
-        storedTranslationLanguage as TranslationLanguageCode,
-      );
+      try {
+        const [storedLanguage, storedTranslationLanguage] = await Promise.all([
+          getCurrentLanguage(),
+          getCurrentTranslationLanguage(),
+        ]);
+        setLocaleState(storedLanguage as LanguageCode);
+        setTranslationLanguageState(
+          storedTranslationLanguage as TranslationLanguageCode,
+        );
+      } finally {
+        setHydrated(true);
+      }
     }
 
     void loadStoredLanguages();
@@ -98,6 +103,10 @@ export function LanguageProvider({ children }: PropsWithChildren) {
       return fallbackValue ?? fallback ?? key;
     },
   }), [locale, translationLanguage]);
+
+  if (!hydrated) {
+    return null;
+  }
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

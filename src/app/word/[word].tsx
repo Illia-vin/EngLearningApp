@@ -23,16 +23,19 @@ export default function WordScreen() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (showLoading = true) => {
     if (!word) return;
-    setLoading(true);
-    const [wordEntry, wordProgress] = await Promise.all([
-      getWordWithTranslation(word, translationLanguage),
-      getWordProgress(word),
-    ]);
-    setEntry(wordEntry);
-    setProgress(wordProgress);
-    setLoading(false);
+    if (showLoading) setLoading(true);
+    try {
+      const [wordEntry, wordProgress] = await Promise.all([
+        getWordWithTranslation(word, translationLanguage),
+        getWordProgress(word),
+      ]);
+      setEntry(wordEntry);
+      setProgress(wordProgress);
+    } finally {
+      if (showLoading) setLoading(false);
+    }
   }, [translationLanguage, word]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
@@ -41,7 +44,7 @@ export default function WordScreen() {
     setUpdating(true);
     try {
       await action();
-      await load();
+      await load(false);
     } finally {
       setUpdating(false);
     }

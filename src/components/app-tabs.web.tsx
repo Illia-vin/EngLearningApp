@@ -59,7 +59,7 @@ export function TabButton({ children, iconName, isFocused, ...props }: TabButton
   return (
     <Pressable
       {...props}
-      style={({ pressed }) => [styles.tabButton, pressed && styles.pressed]}>
+      style={styles.tabButton}>
       <ThemedView
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
         style={styles.tabButtonView}>
