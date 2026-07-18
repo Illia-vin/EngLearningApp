@@ -18,6 +18,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/i18n';
 import {
+  getCachedDictionarySelections,
   getDictionarySelections,
   setDictionaryEnabled,
   type DictionarySelection,
@@ -34,12 +35,18 @@ const DICTIONARY_ICON_SOURCES: Record<string, ImageSourcePropType> = {
   c1: require('../../../assets/images/dictionary-icons/cefr-c1.png'),
 };
 
-export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: string }) {
+export default function DictionariesScreen({
+  dictionaryKey,
+  initialDictionary,
+}: {
+  dictionaryKey?: string;
+  initialDictionary?: DictionarySummary;
+}) {
   const WORD_PAGE_SIZE = 30;
   const dictionaryId = Number(dictionaryKey);
   const router = useRouter();
   const [dictionaries, setDictionaries] = useState<DictionarySelection[]>([]);
-  const [selectedDictionary, setSelectedDictionary] = useState<DictionarySummary | null>(null);
+  const [selectedDictionary, setSelectedDictionary] = useState<DictionarySummary | null>(initialDictionary ?? null);
   const [dictionaryWords, setDictionaryWords] = useState<DictionaryWord[]>([]);
   const [progressByWord, setProgressByWord] = useState<Map<number, UserProgress>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -55,6 +62,11 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
   const dictionaryLoadGeneration = useRef(0);
 
   const loadDictionaries = useCallback(async () => {
+    const cached = getCachedDictionarySelections(locale);
+    if (cached) {
+      setDictionaries(cached);
+      setLoading(false);
+    }
     setError(null);
     try {
       const result = await getDictionarySelections(locale);
@@ -123,7 +135,12 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
   const openDictionary = (dictionary: DictionarySelection) => {
     router.push({
       pathname: '/dictionary/[dictionaryKey]',
-      params: { dictionaryKey: String(dictionary.id) },
+      params: {
+        dictionaryKey: String(dictionary.id),
+        dictionaryName: dictionary.name,
+        dictionaryCefr: dictionary.cefr,
+        dictionaryWordCount: String(dictionary.word_count),
+      },
     });
   };
 
@@ -165,20 +182,22 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
     dictionaryLoadGeneration.current += 1;
     loadedWordCount.current = 0;
     loadingMoreRef.current = false;
+    setSelectedDictionary(initialDictionary ?? null);
     setDictionaryWords([]);
     setProgressByWord(new Map());
     setHasMoreWords(false);
     setDetailLoading(true);
     setError(null);
-    Promise.all([
-      getDictionary(dictionaryId, locale),
-      getDictionaryWords(dictionaryId, translationLanguage, locale, { limit: WORD_PAGE_SIZE }),
-    ])
-      .then(async ([dictionary, words]) => {
+    void getDictionary(dictionaryId, locale).then((dictionary) => {
+      if (active) setSelectedDictionary(dictionary);
+    }).catch((caught) => {
+      if (active) setError(caught instanceof Error ? caught.message : String(caught));
+    });
+    void getDictionaryWords(dictionaryId, translationLanguage, locale, { limit: WORD_PAGE_SIZE })
+      .then(async (words) => {
         const progress = await getWordProgressMap(words.map((word) => word.id));
         if (active) {
           loadedWordCount.current = words.length;
-          setSelectedDictionary(dictionary);
           setDictionaryWords(words);
           setProgressByWord(progress);
           setHasMoreWords(words.length === WORD_PAGE_SIZE);
@@ -197,7 +216,7 @@ export default function DictionariesScreen({ dictionaryKey }: { dictionaryKey?: 
     return () => {
       active = false;
     };
-  }, [dictionaryId, dictionaryKey, locale, translationLanguage]);
+  }, [dictionaryId, dictionaryKey, initialDictionary, locale, translationLanguage]);
 
   if (dictionaryKey) {
     return (

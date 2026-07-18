@@ -16,6 +16,7 @@ import { Colors } from '@/constants/theme';
 import { LanguageProvider, useLanguage } from '@/i18n';
 import { initDatabases } from '@/db/database';
 import { ensureDictionaryProgressCounts } from '@/db/progress';
+import { preloadDictionarySelections } from '@/db/dictionaryPreferences';
 
 const EXIT_CONFIRMATION_WINDOW_MS = 2000;
 
@@ -58,6 +59,7 @@ function DatabaseWarmup() {
       void (async () => {
         await initDatabases();
         await ensureDictionaryProgressCounts();
+        await preloadDictionarySelections(['uk', 'en', 'es']);
       })().catch(() => {
         // The screen that needs the data will retry and surface a real error.
       });
