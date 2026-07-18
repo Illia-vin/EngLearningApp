@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import * as Speech from 'expo-speech';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   interpolate,
@@ -430,6 +431,29 @@ function StudyWordCard({
   const theme = useTheme();
   const transcription = englishVariant === 'american' ? word.phon_n_am : word.phon_br;
   const compact = !detailsVisible && Boolean(onShowDetails);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const speechLanguage = englishVariant === 'american' ? 'en-US' : 'en-GB';
+
+  useEffect(() => () => {
+    void Speech.stop();
+  }, []);
+
+  const speakWord = () => {
+    if (isSpeaking) {
+      void Speech.stop();
+      setIsSpeaking(false);
+      return;
+    }
+    void Speech.stop();
+    setIsSpeaking(true);
+    Speech.speak(word.word, {
+      language: speechLanguage,
+      rate: 0.85,
+      onDone: () => setIsSpeaking(false),
+      onStopped: () => setIsSpeaking(false),
+      onError: () => setIsSpeaking(false),
+    });
+  };
 
   return (
     <ThemedView type="backgroundElement" style={[styles.studyCard, compact && styles.compactStudyCard, { borderColor: theme.border }]}>
@@ -437,7 +461,21 @@ function StudyWordCard({
         {remainingLabel}
       </ThemedText>}
       <View style={[styles.wordHeader, compact && styles.compactWordHeader]}>
-        <ThemedText type="title" style={styles.word}>{word.word}</ThemedText>
+        <View style={styles.wordTitleRow}>
+          <ThemedText type="title" style={styles.word}>{word.word}</ThemedText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Pronounce ${word.word}`}
+            accessibilityState={{ selected: isSpeaking }}
+            onPress={speakWord}
+            style={[styles.speechButton, { backgroundColor: theme.backgroundSelected, borderColor: theme.border }]}>
+            <MaterialCommunityIcons
+              name={isSpeaking ? 'stop' : 'volume-high'}
+              size={22}
+              color={theme.accent}
+            />
+          </Pressable>
+        </View>
         <View
           style={[styles.typeBadge, { backgroundColor: theme.backgroundSelected }]}
         >
@@ -770,6 +808,20 @@ const styles = StyleSheet.create({
   word: {
     textAlign: 'center',
     textTransform: 'capitalize',
+  },
+  wordTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+  },
+  speechButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   typeBadge: {
     borderRadius: 999,

@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import * as Speech from 'expo-speech';
 
 import { DetailHeader } from '@/components/detail-header';
 import { ThemedText } from '@/components/themed-text';
@@ -23,6 +24,7 @@ export default function WordScreen() {
   const [progress, setProgress] = useState<UserProgress | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const load = useCallback(async (showLoading = true) => {
     if (!Number.isSafeInteger(wordId)) return;
@@ -58,6 +60,29 @@ export default function WordScreen() {
   const isKnown = progress?.status === 'known' || progress?.status === 'mastered';
   const canReset = Boolean(progress) && !updating;
   const canMarkKnown = !isKnown && !updating;
+  const speechLanguage = englishVariant === 'american' ? 'en-US' : 'en-GB';
+
+  useEffect(() => () => {
+    void Speech.stop();
+  }, []);
+
+  const speakWord = () => {
+    if (!entry) return;
+    if (isSpeaking) {
+      void Speech.stop();
+      setIsSpeaking(false);
+      return;
+    }
+    void Speech.stop();
+    setIsSpeaking(true);
+    Speech.speak(entry.word, {
+      language: speechLanguage,
+      rate: 0.85,
+      onDone: () => setIsSpeaking(false),
+      onStopped: () => setIsSpeaking(false),
+      onError: () => setIsSpeaking(false),
+    });
+  };
 
   return (
     <ScrollView style={{ backgroundColor: theme.background }} contentContainerStyle={styles.scroll}>
@@ -67,7 +92,17 @@ export default function WordScreen() {
         {!loading && entry && <>
           <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border }]}>
             <View style={styles.wordOverview}>
-              <ThemedText type="title" style={styles.capitalize}>{entry.word}</ThemedText>
+              <View style={styles.wordTitleRow}>
+                <ThemedText type="title" style={styles.capitalize}>{entry.word}</ThemedText>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Pronounce ${entry.word}`}
+                  accessibilityState={{ selected: isSpeaking }}
+                  onPress={speakWord}
+                  style={[styles.speechButton, { backgroundColor: theme.backgroundSelected, borderColor: theme.border }]}>
+                  <MaterialCommunityIcons name={isSpeaking ? 'stop' : 'volume-high'} size={22} color={theme.accent} />
+                </Pressable>
+              </View>
               <View style={[styles.typeBadge, { backgroundColor: theme.backgroundSelected }]}>
                 <ThemedText type="smallBold" themeColor="accent">{entry.type}</ThemedText>
               </View>
@@ -144,6 +179,8 @@ const styles = StyleSheet.create({
   card: { gap: Spacing.three, padding: Spacing.four, borderRadius: Spacing.three, borderWidth: 1 },
   capitalize: { textTransform: 'capitalize' }, track: { height: 8, overflow: 'hidden', borderRadius: 4 }, fill: { height: '100%', borderRadius: 4 },
   wordOverview: { alignItems: 'center', gap: Spacing.two },
+  wordTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.two },
+  speechButton: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   transcription: { fontFamily: Fonts.sans, fontSize: 20, lineHeight: 36, fontWeight: '400', includeFontPadding: true, paddingHorizontal: Spacing.one, paddingVertical: Spacing.half, textAlign: 'center' },
   typeBadge: { borderRadius: 999, paddingHorizontal: Spacing.two, paddingVertical: Spacing.one },
   translationBlock: { alignItems: 'center', paddingVertical: Spacing.two, paddingHorizontal: Spacing.three, borderWidth: 1, borderRadius: Spacing.three },
